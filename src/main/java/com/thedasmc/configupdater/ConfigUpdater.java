@@ -26,11 +26,8 @@ public class ConfigUpdater {
         try (BufferedReader reader = new BufferedReader(new FileReader(updateFrom));
              BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate))) {
 
-            //Clear file
-            new FileWriter(toUpdate, false).close();
-
             String line;
-            while ((line = reader.readLine()) != null) {
+            outer: while ((line = reader.readLine()) != null) {
 
                 if (line.startsWith("#")) {
 
@@ -42,17 +39,39 @@ public class ConfigUpdater {
 
                 for (String key : config.getKeys(true)) {
 
-                    if (line.startsWith(key + ":")) {
+                    String[] keyArray = key.split("\\.");
+                    String keyString = keyArray[keyArray.length - 1];
+
+                    if (line.trim().startsWith(keyString + ":")) {
+
+                        if (config.isConfigurationSection(key)) {
+
+                            writer.write(line);
+                            writer.newLine();
+                            continue outer;
+
+                        }
 
                         String[] array = line.split(": ");
 
                         if (array.length == 2) {
 
-                            line = array[0] + ": " + config.getString(key);
+                            if (array[1].startsWith("\"") || array[1].startsWith("'")) {
+
+                                char c = array[1].charAt(0);
+                                line = array[0] + ": " + c + config.get(key) + c;
+
+                            } else {
+
+                                line = array[0] + ": " + config.get(key);
+
+                            }
 
                         }
 
-                        break;
+                        writer.write(line);
+                        writer.newLine();
+                        continue outer;
 
                     }
 
