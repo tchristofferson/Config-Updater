@@ -5,6 +5,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
 
+/**
+ * A class to update/add new sections/keys to your config
+ * while keeping your current values
+ */
 public class ConfigUpdater {
 
     /**
