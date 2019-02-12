@@ -4,6 +4,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A class to update/add new sections/keys to your config
@@ -93,7 +96,7 @@ public class ConfigUpdater {
 
                     String[] array = line.split(": ");
 
-                    if (array.length == 2) {
+                    if (array.length > 1) {
 
                         if (array[1].startsWith("\"") || array[1].startsWith("'")) {
 
