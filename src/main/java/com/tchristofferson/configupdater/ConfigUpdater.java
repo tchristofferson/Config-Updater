@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 /**
  * A class to update/add new sections/keys to your config
  * while keeping your current values and keeping your comments
+ * @author tchristofferson
  */
 public class ConfigUpdater {
 
