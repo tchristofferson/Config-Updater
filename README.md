@@ -1,7 +1,7 @@
 # Config-Updater
 Used to update files for Bukkit/Spigot API
 
-## Example Usage
+#### Example Usage
 onEnable method:
 ```
 saveDefaultConfig();
