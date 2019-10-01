@@ -16,3 +16,17 @@ try {
 
 reloadConfig();
 ```
+### Maven
+```
+<repository>
+  <id>maven-central</id>
+  <url>https://oss.sonatype.org/content/groups/public</url>
+</repository>
+```
+```
+<dependency>
+  <groupId>com.tchristofferson</groupId>
+  <artifactId>ConfigUpdater</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</dependency>
+```
