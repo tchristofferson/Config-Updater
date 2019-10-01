@@ -12,8 +12,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A class to update/add new sections/keys to your config
- * while keeping your current values and keeping your comments
+ * A class to update/add new sections/keys to your config while keeping your current values and keeping your comments
+ * Algorithm:
+ * Read the new file and scan for comments and ignored sections, if ignored section is found it is treated as a comment.
+ * Read and write each line of the new config, if the old config has value for the given key it writes that value in the new config.
+ * If a key has an attached comment above it, it is written first.
  * @author tchristofferson
  */
 public class ConfigUpdater {
@@ -35,9 +38,13 @@ public class ConfigUpdater {
         FileConfiguration newConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName)));
         BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate));
 
+        List<String> ignoredSectionsArrayList = new ArrayList<>(ignoredSections);
+        //ignoredSections can ONLY contain configurations sections
+        ignoredSectionsArrayList.removeIf(ignoredSection -> !newConfig.isConfigurationSection(ignoredSection));
+
         Yaml yaml = new Yaml();
-        Map<String, String> comments = parseComments(newLines, ignoredSections, oldConfig, yaml);
-        write(newConfig, oldConfig, comments, ignoredSections, writer, yaml);
+        Map<String, String> comments = parseComments(newLines, ignoredSectionsArrayList, oldConfig, yaml);
+        write(newConfig, oldConfig, comments, ignoredSectionsArrayList, writer, yaml);
     }
 
     //Write method doing the work.
@@ -92,9 +99,10 @@ public class ConfigUpdater {
         } else if (obj instanceof String || obj instanceof Character) {
             if (obj instanceof String) {
                 String s = (String) obj;
-                obj = s.replace("\n", "\\n").replace("\t", "\\t");
+                obj = s.replace("\n", "\\n");
             }
-            writer.write(prefixSpaces + actualKey + ": '" + obj + "'\n");
+
+            writer.write(prefixSpaces + actualKey + ": " + yaml.dump(obj));
         } else if (obj instanceof List) {
             writeList((List) obj, actualKey, prefixSpaces, yaml, writer);
         } else {
@@ -158,21 +166,11 @@ public class ConfigUpdater {
                 lastLineIndentCount = setFullKey(keyBuilder, line, lastLineIndentCount);
 
                 for (String ignoredSection : ignoredSections) {
-                    if (keyBuilder.toString().startsWith(ignoredSection)) {
+                    if (keyBuilder.toString().equals(ignoredSection)) {
                         Object value = oldConfig.get(keyBuilder.toString());
 
-                        if (value instanceof ConfigurationSection) {
-                            ConfigurationSection section = (ConfigurationSection) value;
-
-                            if (section.getKeys(false).isEmpty()) {
-                                String key = getKeyFromFullKey(keyBuilder.toString());
-                                appendPrefixSpaces(builder, lastLineIndentCount);//lastLineIndentCount is still the indent count for the current line until next line
-                                builder.append(key).append(": {}");
-                            } else {
-                                //Write all the keys and values to builder
-                                appendSection(builder, section, new StringBuilder(getPrefixSpaces(lastLineIndentCount)), yaml);
-                            }
-                        }
+                        if (value instanceof ConfigurationSection)
+                            appendSection(builder, (ConfigurationSection) value, new StringBuilder(getPrefixSpaces(lastLineIndentCount)), yaml);
 
                         continue outer;
                     }
@@ -205,20 +203,18 @@ public class ConfigUpdater {
             String actualKey = getKeyFromFullKey(key);
 
             if (value instanceof ConfigurationSection) {
-                ConfigurationSection s = (ConfigurationSection) value;
-                appendSection(builder, s, prefixSpaces, yaml);
+                appendSection(builder, (ConfigurationSection) value, prefixSpaces, yaml);
             } else if (value instanceof List) {
                 builder.append(getListAsString((List) value, actualKey, prefixSpaces.toString(), yaml));
-            } else {//FIXME: Not being added to the config
-                builder.append(prefixSpaces.toString()).append(actualKey).append(": ");
-
-                if (value instanceof String || value instanceof Character) {
-                    builder.append("'").append(value).append("'");
-                } else {
-                    builder.append(yaml.dump(value));//TODO: Check and see if dump adds new line
-                }
-
-                builder.append("\n");
+            } else {
+                builder.append(prefixSpaces.toString()).append(actualKey).append(": ").append(yaml.dump(value));
+//                if (value instanceof String || value instanceof Character) {
+//                    builder.append("'").append(value).append("'");
+//                } else {
+//                    builder.append(yaml.dump(value));//dump automatically adds \n
+//                }
+//
+//                builder.append("\n");
             }
         }
     }
