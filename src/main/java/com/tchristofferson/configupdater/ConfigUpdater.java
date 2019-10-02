@@ -88,6 +88,12 @@ public class ConfigUpdater {
             }
         }
 
+        String danglingComments = comments.get(null);
+
+        if (danglingComments != null) {
+            writer.write(danglingComments);
+        }
+
         writer.close();
     }
 
