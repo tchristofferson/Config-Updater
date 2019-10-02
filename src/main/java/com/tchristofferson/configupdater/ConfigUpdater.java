@@ -55,10 +55,10 @@ public class ConfigUpdater {
             String actualKey = keys[keys.length - 1];
             String comment = comments.remove(key);
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder prefixBuilder = new StringBuilder();
             int indents = keys.length - 1;
-            appendPrefixSpaces(builder, indents);
-            String prefixSpaces = builder.toString();
+            appendPrefixSpaces(prefixBuilder, indents);
+            String prefixSpaces = prefixBuilder.toString();
 
             if (comment != null) {
                 writer.write(comment);//No \n character necessary, new line is automatically at end of comment
@@ -183,6 +183,10 @@ public class ConfigUpdater {
             }
         }
 
+        if (builder.length() > 0) {
+            comments.put(null, builder.toString());
+        }
+
         return comments;
     }
 
@@ -208,13 +212,6 @@ public class ConfigUpdater {
                 builder.append(getListAsString((List) value, actualKey, prefixSpaces.toString(), yaml));
             } else {
                 builder.append(prefixSpaces.toString()).append(actualKey).append(": ").append(yaml.dump(value));
-//                if (value instanceof String || value instanceof Character) {
-//                    builder.append("'").append(value).append("'");
-//                } else {
-//                    builder.append(yaml.dump(value));//dump automatically adds \n
-//                }
-//
-//                builder.append("\n");
             }
         }
     }
