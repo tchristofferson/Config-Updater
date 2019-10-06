@@ -9,7 +9,7 @@ saveDefaultConfig();
 File configFile = new File(getDataFolder(), "config.yml");
 
 try {
-  ConfigUpdater.update(this, "config.yml", configFile, Arrays.asList(...));
+  ConfigUpdater.update(plugin, "config.yml", configFile, Arrays.asList(...));
 } catch (IOException e) {
   e.printStackTrace();
 }
