@@ -133,7 +133,14 @@ public class ConfigUpdater {
     }
 
     private static String getListAsString(List list, String actualKey, String prefixSpaces, Yaml yaml) {
-        StringBuilder builder = new StringBuilder(prefixSpaces).append(actualKey).append(":\n");
+        StringBuilder builder = new StringBuilder(prefixSpaces).append(actualKey).append(":");
+
+        if (list.isEmpty()) {
+            builder.append(" []\n");
+            return builder.toString();
+        }
+
+        builder.append("\n");
 
         for (int i = 0; i < list.size(); i++) {
             Object o = list.get(i);
