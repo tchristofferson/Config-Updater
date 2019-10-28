@@ -210,10 +210,10 @@ public class ConfigUpdater {
         if (keys.isEmpty()) {
             builder.append(" {}\n");
             return;
-        } else {
-            builder.append("\n");
-            prefixSpaces.append("  ");
         }
+
+        builder.append("\n");
+        prefixSpaces.append("  ");
 
         for (String key : keys) {
             Object value = section.get(key);
@@ -221,6 +221,7 @@ public class ConfigUpdater {
 
             if (value instanceof ConfigurationSection) {
                 appendSection(builder, (ConfigurationSection) value, prefixSpaces, yaml);
+                prefixSpaces.setLength(prefixSpaces.length() - 2);
             } else if (value instanceof List) {
                 builder.append(getListAsString((List) value, actualKey, prefixSpaces.toString(), yaml));
             } else {
