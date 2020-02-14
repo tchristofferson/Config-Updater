@@ -8,6 +8,7 @@ import org.bukkit.plugin.Plugin;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,13 +31,13 @@ public class ConfigUpdater {
      * @throws IOException If an IOException occurs
      */
     public static void update(Plugin plugin, String resourceName, File toUpdate, List<String> ignoredSections) throws IOException {
-        BufferedReader newReader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName)));
+        BufferedReader newReader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
         List<String> newLines = newReader.lines().collect(Collectors.toList());
         newReader.close();
 
         FileConfiguration oldConfig = YamlConfiguration.loadConfiguration(toUpdate);
         FileConfiguration newConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName)));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(toUpdate), StandardCharsets.UTF_8));
 
         List<String> ignoredSectionsArrayList = new ArrayList<>(ignoredSections);
         //ignoredSections can ONLY contain configurations sections
