@@ -103,13 +103,11 @@ public class ConfigUpdater {
     private static void write(Object obj, String actualKey, String prefixSpaces, Yaml yaml, BufferedWriter writer) throws IOException {
         if (obj instanceof ConfigurationSerializable) {
             writer.write(prefixSpaces + actualKey + ": " + yaml.dump(((ConfigurationSerializable) obj).serialize()));
-        } else if (obj instanceof String || obj instanceof Character) {
-            if (obj instanceof String) {
-                String s = (String) obj;
-                obj = s.replace("\n", "\\n");
-            }
-
-            writer.write(prefixSpaces + actualKey + ": " + yaml.dump(obj));
+        } else if (obj instanceof String) {
+            String s = ((String) obj).replace("\n", "\\n");
+            writer.write(prefixSpaces + actualKey + ": " + formatStringValue(s) + "\n");
+        } else if (obj instanceof Character) {
+            writer.write(prefixSpaces + actualKey + ": '" + obj + "'\n");
         } else if (obj instanceof List) {
             writeList((List) obj, actualKey, prefixSpaces, yaml, writer);
         } else {
@@ -146,7 +144,10 @@ public class ConfigUpdater {
         for (int i = 0; i < list.size(); i++) {
             Object o = list.get(i);
 
-            if (o instanceof String || o instanceof Character) {
+            if (o instanceof String) {
+                String value = (String) o;
+                builder.append(prefixSpaces).append("- ").append(formatStringValue(value));
+            } else if (o instanceof Character) {
                 builder.append(prefixSpaces).append("- '").append(o).append("'");
             } else if (o instanceof List) {
                 builder.append(prefixSpaces).append("- ").append(yaml.dump(o));
@@ -313,5 +314,13 @@ public class ConfigUpdater {
 
     private static void appendPrefixSpaces(StringBuilder builder, int indents) {
         builder.append(getPrefixSpaces(indents));
+    }
+
+    private static String formatStringValue(String value) {
+        if (value.contains("'") || value.contains("\"")) {
+            return "'" + value.replace("'", "''") + "'";
+        } else {
+            return "'" + value + "'";
+        }
     }
 }
