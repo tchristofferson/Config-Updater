@@ -1,13 +1,17 @@
 package com.tchristofferson.configupdater;
 
 import com.google.common.base.Preconditions;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ConfigUpdater {
 
@@ -20,7 +24,8 @@ public class ConfigUpdater {
         FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
         FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(toUpdate);
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
-        Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, ignoredSections == null ? Collections.emptyList() : ignoredSections);
+        Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
+        write(defaultConfig, currentConfig, toUpdate, comments, ignoredSectionsValues);
     }
 
     //TODO: Test write method
@@ -32,24 +37,42 @@ public class ConfigUpdater {
         keyLoop: for (String fullKey : defaultConfig.getKeys(true)) {
             String comment = comments.get(fullKey);
 
-            //Comments always end with \n
+            //Comments always end with new line (\n)
             if (comment != null)
                 writer.write(comment);
 
-            Iterator<Map.Entry<String, String>> iterator = ignoredSectionsValues.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, String> entry = iterator.next();
-
+            for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
                 if (entry.getKey().equals(fullKey)) {
                     writer.write(entry.getValue());
-                    iterator.remove();
                     continue keyLoop;
-                } else if (KeyBuilder.isSubKey(entry.getKey(), fullKey, SEPARATOR)) {
+                } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                     continue keyLoop;
                 }
             }
 
-            //TODO: Write indents, last index of split full key, then currentConfig value
+            Object currentValue = currentConfig.get(fullKey);
+
+            if (currentValue == null)
+                currentValue = defaultConfig.get(fullKey);
+
+            String[] splitFullKey = fullKey.split("[" + SEPARATOR + "]");
+            String trailingKey = splitFullKey[splitFullKey.length - 1];
+
+            if (currentValue instanceof ConfigurationSection) {
+                String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
+                writer.write(indents + trailingKey + ":");
+
+                if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty())
+                    writer.write("\n");
+
+                continue;
+            }
+
+            String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
+            parserConfig.set(trailingKey, currentValue);
+            String toWrite = indents + parserConfig.saveToString().replace("\n", "\n" + indents);
+            parserConfig.set(trailingKey, null);
+            writer.write(toWrite);
         }
 
         writer.close();
@@ -97,44 +120,13 @@ public class ConfigUpdater {
         return comments;
     }
 
-    private static Map<String, String> parseIgnoredSections(File toUpdate, FileConfiguration currentConfig, List<String> ignoredSections) throws IOException {
+    private static Map<String, String> parseIgnoredSections(File toUpdate, FileConfiguration currentConfig, Map<String, String> comments, List<String> ignoredSections) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(toUpdate));
         Map<String, String> ignoredSectionsValues = new LinkedHashMap<>(ignoredSections.size());
         KeyBuilder keyBuilder = new KeyBuilder(currentConfig, SEPARATOR);
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            //Will parse if it is an ignored section
-            parseIgnoredSection(ignoredSections, reader, ignoredSectionsValues, keyBuilder, line);
-        }
-
-        reader.close();
-        return ignoredSectionsValues;
-    }
-
-    private static void parseIgnoredSection(List<String> ignoredSections, BufferedReader reader, Map<String, String> ignoredSectionsValues, KeyBuilder keyBuilder, String line) throws IOException {
-        String trimmedLine = line.trim();
-
-        //Ignore blank lines, comments, and array/list elements
-        if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("-"))
-            return;
-
-        keyBuilder.parseLine(trimmedLine);
-        String key = keyBuilder.toString();
-
-        for (String ignoredSection : ignoredSections) {
-            if (key.equals(ignoredSection)) {
-                ignoredSectionsValues.put(key, buildIgnoredSectionValue(reader, keyBuilder, ignoredSection));
-                //Needs to use recursion because buildIgnoredSectionValue method reads until the key isn't a sub-key of the ignored section, which needs to be parsed as well
-                parseIgnoredSection(ignoredSections, reader, ignoredSectionsValues, keyBuilder, trimmedLine);
-                break;
-            }
-        }
-    }
-
-    private static String buildIgnoredSectionValue(BufferedReader reader, KeyBuilder keyBuilder, String ignoredSection) throws IOException {
         StringBuilder valueBuilder = new StringBuilder();
 
+        String currentIgnoredSection = null;
         String line;
         while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
@@ -142,18 +134,50 @@ public class ConfigUpdater {
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("-"))
                 continue;
 
-            keyBuilder.parseLine(line);
+            keyBuilder.parseLine(trimmedLine);
+            String fullKey = keyBuilder.toString();
 
-            if (!keyBuilder.isSubKey(ignoredSection))
-                break;
+            //If building the value for an ignored section and this line is no longer a part of the ignored section,
+            //  write the valueBuilder, reset it, and set the current ignored section to null
+            if (currentIgnoredSection != null && !KeyBuilder.isSubKeyOf(currentIgnoredSection, fullKey, SEPARATOR)) {
+                ignoredSectionsValues.put(currentIgnoredSection, valueBuilder.toString());
+                valueBuilder.setLength(0);
+                currentIgnoredSection = null;
+            }
 
-            if (valueBuilder.length() > 0)
-                valueBuilder.append("\n");
+            for (String ignoredSection : ignoredSections) {
+                boolean isIgnoredParent = ignoredSection.equals(fullKey);
 
-            valueBuilder.append(line);
+                if (isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
+                    if (valueBuilder.length() > 0)
+                        valueBuilder.append("\n");
+
+                    String comment = comments.get(fullKey);
+
+                    if (comment != null) {
+                        String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
+                        valueBuilder.append(indents).append(comment.replace("\n", "\n" + indents));//Should end with new line (\n)
+                        valueBuilder.setLength(valueBuilder.length() - indents.length() - 2);//Get rid of trailing \n and spaces
+                    }
+
+                    valueBuilder.append(line);
+
+                    //Set the current ignored section for future iterations of while loop
+                    //Don't set currentIgnoredSection to any ignoredSection sub-keys
+                    if (isIgnoredParent)
+                        currentIgnoredSection = fullKey;
+
+                    break;
+                }
+            }
         }
 
-        return valueBuilder.toString();
+        reader.close();
+
+        if (valueBuilder.length() > 0)
+            ignoredSectionsValues.put(currentIgnoredSection, valueBuilder.toString());
+
+        return ignoredSectionsValues;
     }
 
     //Input: 'key1.key2' Result: 'key1'
@@ -167,6 +191,11 @@ public class ConfigUpdater {
         //Makes sure begin index isn't < 0 (error). Occurs when there is only one key in the path
         int minIndex = Math.max(0, keyBuilder.length() - split[split.length - 1].length() - 1);
         keyBuilder.replace(minIndex, keyBuilder.length(), "");
+    }
+
+    private static void appendNewLine(StringBuilder builder) {
+        if (builder.length() > 0)
+            builder.append("\n");
     }
 
 }
