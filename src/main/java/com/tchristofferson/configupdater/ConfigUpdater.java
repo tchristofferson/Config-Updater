@@ -35,18 +35,20 @@ public class ConfigUpdater {
         FileConfiguration parserConfig = new YamlConfiguration();
 
         keyLoop: for (String fullKey : defaultConfig.getKeys(true)) {
-            String comment = comments.get(fullKey);
-
-            //Comments always end with new line (\n)
-            if (comment != null)
-                writer.write(comment);
-
             for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
                 if (entry.getKey().equals(fullKey)) {
                     writer.write(entry.getValue());
+                    //TODO: remove
+                    writer.flush();
                     continue keyLoop;
                 } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                     continue keyLoop;
+                } else {
+                    String comment = comments.get(fullKey);
+
+                    //Comments always end with new line (\n)
+                    if (comment != null)
+                        writer.write(comment);
                 }
             }
 
@@ -64,6 +66,8 @@ public class ConfigUpdater {
 
                 if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty())
                     writer.write("\n");
+                else
+                    writer.write(" {}\n");
 
                 continue;
             }
@@ -86,12 +90,13 @@ public class ConfigUpdater {
         KeyBuilder keyBuilder = new KeyBuilder(defaultConfig, SEPARATOR);
 
         String line;
-        lineLoop: while ((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
 
             //Only getting comments for keys. A list/array element comment(s) not supported
-            if (trimmedLine.startsWith("-"))
+            if (trimmedLine.startsWith("-")) {
                 continue;
+            }
 
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {//Is blank line or is comment
                 commentBuilder.append(trimmedLine).append("\n");
@@ -157,7 +162,7 @@ public class ConfigUpdater {
                     if (comment != null) {
                         String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
                         valueBuilder.append(indents).append(comment.replace("\n", "\n" + indents));//Should end with new line (\n)
-                        valueBuilder.setLength(valueBuilder.length() - indents.length() - 2);//Get rid of trailing \n and spaces
+                        valueBuilder.setLength(valueBuilder.length() - indents.length());//Get rid of trailing \n and spaces
                     }
 
                     valueBuilder.append(line);
