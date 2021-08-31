@@ -27,19 +27,18 @@ public class ConfigUpdater {
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
         write(defaultConfig, currentConfig, toUpdate, comments, ignoredSectionsValues);
     }
-
-    //TODO: Test write method
+    
     private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, File toUpdate, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate));
         //Used for converting objects to yaml, then cleared
         FileConfiguration parserConfig = new YamlConfiguration();
 
         keyLoop: for (String fullKey : defaultConfig.getKeys(true)) {
+            String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
+
             for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
                 if (entry.getKey().equals(fullKey)) {
                     writer.write(entry.getValue());
-                    //TODO: remove
-                    writer.flush();
                     continue keyLoop;
                 } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                     continue keyLoop;
@@ -48,7 +47,8 @@ public class ConfigUpdater {
 
                     //Comments always end with new line (\n)
                     if (comment != null)
-                        writer.write(comment);
+                        //Replaces all '\n' with '\n' + indents except for the last one
+                        writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
                 }
             }
 
@@ -61,7 +61,6 @@ public class ConfigUpdater {
             String trailingKey = splitFullKey[splitFullKey.length - 1];
 
             if (currentValue instanceof ConfigurationSection) {
-                String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
                 writer.write(indents + trailingKey + ":");
 
                 if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty())
@@ -72,9 +71,10 @@ public class ConfigUpdater {
                 continue;
             }
 
-            String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
             parserConfig.set(trailingKey, currentValue);
-            String toWrite = indents + parserConfig.saveToString().replace("\n", "\n" + indents);
+            String yaml = parserConfig.saveToString();
+            yaml = yaml.substring(0, yaml.length() - 1).replace("\n", "\n" + indents);
+            String toWrite = indents + yaml + "\n";
             parserConfig.set(trailingKey, null);
             writer.write(toWrite);
         }
