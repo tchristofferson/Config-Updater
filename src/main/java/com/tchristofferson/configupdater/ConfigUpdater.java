@@ -27,7 +27,7 @@ public class ConfigUpdater {
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
         write(defaultConfig, currentConfig, toUpdate, comments, ignoredSectionsValues);
     }
-    
+
     private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, File toUpdate, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate));
         //Used for converting objects to yaml, then cleared
@@ -36,19 +36,18 @@ public class ConfigUpdater {
         keyLoop: for (String fullKey : defaultConfig.getKeys(true)) {
             String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
 
-            for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
-                if (entry.getKey().equals(fullKey)) {
-                    writer.write(entry.getValue());
-                    continue keyLoop;
-                } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
-                    continue keyLoop;
-                } else {
-                    String comment = comments.get(fullKey);
-
-                    //Comments always end with new line (\n)
-                    if (comment != null)
-                        //Replaces all '\n' with '\n' + indents except for the last one
-                        writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
+            if (ignoredSectionsValues.isEmpty()) {
+                writeCommentIfExists(comments, writer, fullKey, indents);
+            } else {
+                for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
+                    if (entry.getKey().equals(fullKey)) {
+                        writer.write(entry.getValue());
+                        continue keyLoop;
+                    } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
+                        continue keyLoop;
+                    } else {
+                        writeCommentIfExists(comments, writer, fullKey, indents);
+                    }
                 }
             }
 
@@ -78,6 +77,11 @@ public class ConfigUpdater {
             parserConfig.set(trailingKey, null);
             writer.write(toWrite);
         }
+
+        String danglingComments = comments.get(null);
+
+        if (danglingComments != null)
+            writer.write(danglingComments);
 
         writer.close();
     }
@@ -183,6 +187,15 @@ public class ConfigUpdater {
             ignoredSectionsValues.put(currentIgnoredSection, valueBuilder.toString());
 
         return ignoredSectionsValues;
+    }
+
+    private static void writeCommentIfExists(Map<String, String> comments, BufferedWriter writer, String fullKey, String indents) throws IOException {
+        String comment = comments.get(fullKey);
+
+        //Comments always end with new line (\n)
+        if (comment != null)
+            //Replaces all '\n' with '\n' + indents except for the last one
+            writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
     }
 
     //Input: 'key1.key2' Result: 'key1'
