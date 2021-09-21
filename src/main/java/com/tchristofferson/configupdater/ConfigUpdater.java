@@ -41,7 +41,7 @@ public class ConfigUpdater {
             } else {
                 for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
                     if (entry.getKey().equals(fullKey)) {
-                        writer.write(entry.getValue());
+                        writer.write(entry.getValue() + "\n");
                         continue keyLoop;
                     } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                         continue keyLoop;
