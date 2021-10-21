@@ -34,8 +34,8 @@ public class ConfigUpdater {
         String value = writer.toString(); // config contents
 
         Path toUpdatePath = toUpdate.toPath();
-        if (!value.equals(Files.readString(toUpdatePath))) { // if updated contents are not the same as current file contents, update
-            Files.writeString(toUpdatePath, value);
+        if (!value.equals(Files.readString(toUpdatePath, StandardCharsets.UTF_8))) { // if updated contents are not the same as current file contents, update
+            Files.writeString(toUpdatePath, value, StandardCharsets.UTF_8);
         }
     }
 
