@@ -8,6 +8,8 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,11 +27,19 @@ public class ConfigUpdater {
         FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(toUpdate);
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
-        write(defaultConfig, currentConfig, toUpdate, comments, ignoredSectionsValues);
+
+        // will write updated config file "contents" to a string
+        StringWriter writer = new StringWriter();
+        write(defaultConfig, currentConfig, new BufferedWriter(writer), comments, ignoredSectionsValues);
+        String value = writer.toString(); // config contents
+
+        Path toUpdatePath = toUpdate.toPath();
+        if (!value.equals(new String(Files.readAllBytes(toUpdatePath), StandardCharsets.UTF_8))) { // if updated contents are not the same as current file contents, update
+            Files.write(toUpdatePath, value.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
-    private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, File toUpdate, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(toUpdate));
+    private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, BufferedWriter writer, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
         //Used for converting objects to yaml, then cleared
         FileConfiguration parserConfig = new YamlConfiguration();
 
