@@ -153,17 +153,17 @@ public class ConfigUpdater {
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#"))
                 continue;
 
-	        if(trimmedLine.startsWith("-")) {
-		        for(String ignoredSection : ignoredSections) {
-		            boolean isIgnoredParent = ignoredSection.equals(keyBuilder.toString());
-		
-		            if(isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
+	    if (trimmedLine.startsWith("-")) {
+	        for (String ignoredSection : ignoredSections) {
+		    boolean isIgnoredParent = ignoredSection.equals(keyBuilder.toString());
+		    
+		    if (isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
                         valueBuilder.append("\n" + line);
-	            	    
-		                continue lineLoop;
+	            	
+		        continue lineLoop;
                     }
-		        }
-	        }
+		}
+	    }
             
             keyBuilder.parseLine(trimmedLine);
             String fullKey = keyBuilder.toString();
