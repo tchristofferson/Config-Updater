@@ -147,12 +147,24 @@ public class ConfigUpdater {
 
         String currentIgnoredSection = null;
         String line;
-        while ((line = reader.readLine()) != null) {
+        lineLoop : while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
 
-            if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("-"))
+            if (trimmedLine.isEmpty() || trimmedLine.startsWith("#"))
                 continue;
 
+	        if(trimmedLine.startsWith("-")) {
+		        for(String ignoredSection : ignoredSections) {
+		            boolean isIgnoredParent = ignoredSection.equals(keyBuilder.toString());
+		
+		            if(isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
+                        valueBuilder.append("\n" + line);
+	            	    
+		                continue lineLoop;
+                    }
+		        }
+	        }
+            
             keyBuilder.parseLine(trimmedLine);
             String fullKey = keyBuilder.toString();
 
