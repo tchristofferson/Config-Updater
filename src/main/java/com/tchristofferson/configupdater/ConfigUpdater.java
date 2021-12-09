@@ -158,8 +158,7 @@ public class ConfigUpdater {
                     boolean isIgnoredParent = ignoredSection.equals(keyBuilder.toString());
 
                     if (isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
-                        valueBuilder.append("\n" + line);
-
+                        valueBuilder.append("\n").append(line);
                         continue lineLoop;
                     }
                 }
