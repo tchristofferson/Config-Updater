@@ -10,15 +10,16 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigUpdater {
 
     //Used for separating keys in the keyBuilder inside parseComments method
     private static final char SEPARATOR = '.';
+
+    public static void update(Plugin plugin, String resourceName, File toUpdate, String... ignoredSections) throws IOException {
+        update(plugin, resourceName, toUpdate, Arrays.asList(ignoredSections));
+    }
 
     public static void update(Plugin plugin, String resourceName, File toUpdate, List<String> ignoredSections) throws IOException {
         Preconditions.checkArgument(toUpdate.exists(), "The toUpdate file doesn't exist!");
