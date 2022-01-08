@@ -1,11 +1,10 @@
 package com.tchristofferson.configupdater;
 
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -20,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,21 +41,49 @@ public class ConfigUpdaterTest {
         new File(FILE_NAME).delete();
     }
 
+    @Before
+    public void before() throws IOException, URISyntaxException {
+        saveDefaultConfig(new File(FILE_NAME));
+    }
+
     @Test
-    public void testUpdateMethodToCheckIfFilesAreSameAfter() throws URISyntaxException, IOException {
+    public void testUpdateMethodToCheckIfFilesAreSameAfter() throws IOException, URISyntaxException {
         File toUpdate = new File(FILE_NAME);
 
-        /* Save the default config */
-        URL preUpdateUrl = getClass().getClassLoader().getResource(FILE_NAME);
-        Path path = Paths.get(preUpdateUrl.toURI());
-        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(path));
-        configuration.save(toUpdate);
-
         //config.yml uses \r\n for new lines whereas after update uses \n
-        String preUpdateContent = new String(Files.readAllBytes(path)).replace("\r\n", "\n");
+        String preUpdateContent = new String(Files.readAllBytes(getResourcePath())).replace("\r\n", "\n");
         ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
         String postUpdateContent = new String(Files.readAllBytes(toUpdate.toPath())).trim();
 
         assertEquals(preUpdateContent, postUpdateContent);
+    }
+
+    @Test
+    public void testUpdateMethodToMakeSureIgnoredSectionsAreHandledCorrectly() throws IOException, InvalidConfigurationException {
+        File toUpdate = new File(FILE_NAME);
+
+        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+        config.set("a-section-with-ignored-sections.sub-ignored.ignored.value3", 3);
+        config.set("a-section-with-ignored-sections.sub-ignored.ignored2.value", 1);
+
+        config.save(toUpdate);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "a-section-with-ignored-sections.sub-ignored");
+        config.load(toUpdate);
+
+        assertTrue(config.contains("a-section-with-ignored-sections.sub-ignored.ignored.value3"));
+        assertTrue(config.contains("a-section-with-ignored-sections.sub-ignored.ignored2.value"));
+        assertEquals(config.getInt("a-section-with-ignored-sections.sub-ignored.ignored.value3"), 3);
+        assertEquals(config.getInt("a-section-with-ignored-sections.sub-ignored.ignored2.value"), 1);
+    }
+
+    private void saveDefaultConfig(File toUpdate) throws IOException, URISyntaxException {
+        Path path = getResourcePath();
+        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(path));
+        configuration.save(toUpdate);
+    }
+
+    private Path getResourcePath() throws URISyntaxException {
+        URL preUpdateUrl = getClass().getClassLoader().getResource(FILE_NAME);
+        return Paths.get(preUpdateUrl.toURI());
     }
 }

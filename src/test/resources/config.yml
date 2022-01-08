@@ -12,6 +12,12 @@ key5: This is key5's "value"
 section:
   #seckey1 comment
   seckey1: seckey1 value
+#The ignored section is sub-ignored
+a-section-with-ignored-sections:
+  sub-ignored:
+    ignored:
+      value: 1
+      value2: 2
 #key-list comment
 key-list:
 - item 0
