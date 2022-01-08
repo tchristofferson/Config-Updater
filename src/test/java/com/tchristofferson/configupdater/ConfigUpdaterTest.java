@@ -38,6 +38,7 @@ public class ConfigUpdaterTest {
 
     @AfterClass
     public static void afterClass() {
+        //noinspection ResultOfMethodCallIgnored
         new File(FILE_NAME).delete();
     }
 
@@ -84,6 +85,7 @@ public class ConfigUpdaterTest {
 
     private Path getResourcePath() throws URISyntaxException {
         URL preUpdateUrl = getClass().getClassLoader().getResource(FILE_NAME);
+        //noinspection ConstantConditions
         return Paths.get(preUpdateUrl.toURI());
     }
 }
