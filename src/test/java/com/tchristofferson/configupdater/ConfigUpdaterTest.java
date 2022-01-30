@@ -87,7 +87,8 @@ public class ConfigUpdaterTest {
         FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
         assertTrue(config.contains("section2"));
         ConfigUpdater.update(plugin, DELETE_SECTION_FILE_NAME, toUpdate, ignoredSections);
-        config = YamlConfiguration.loadConfiguration(toUpdate);//This works
+//        config.load(toUpdate);This doesn't work for some reason
+        config = YamlConfiguration.loadConfiguration(toUpdate);//This works but the above doesn't
         assertFalse(config.contains("section2"));
     }
 
