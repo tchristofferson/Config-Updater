@@ -8,6 +8,7 @@ key3: This is key3s value
 #key 4 comment
 key4: This is "key4s" value
 #key 5 comment
+#Comment
 key5: This is key5's "value"
 section:
   #seckey1 comment
@@ -30,6 +31,7 @@ key-list:
 - item 2's
 - item "3"
 - item "4" test's
+#Comments
 key6-ignored:
   list:
   - item 0
