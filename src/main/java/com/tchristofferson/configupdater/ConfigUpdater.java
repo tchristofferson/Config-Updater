@@ -50,17 +50,16 @@ public class ConfigUpdater {
             if (ignoredSectionsValues.isEmpty()) {
                 writeCommentIfExists(comments, writer, fullKey, indents);
             } else {
-                if (ignoredSectionsValues.containsKey(fullKey)) {
-                    writer.write(ignoredSectionsValues.get(fullKey) + "\n");
-                    continue;
-                } else {
-                    for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
-                        if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR))
-                            continue keyLoop;
+                for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
+                    if (entry.getKey().equals(fullKey)) {
+                        writer.write(ignoredSectionsValues.get(fullKey) + "\n");
+                        continue keyLoop;
+                    } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
+                        continue keyLoop;
                     }
-
-                    writeCommentIfExists(comments, writer, fullKey, indents);
                 }
+
+                writeCommentIfExists(comments, writer, fullKey, indents);
             }
 
             Object currentValue = currentConfig.get(fullKey);
