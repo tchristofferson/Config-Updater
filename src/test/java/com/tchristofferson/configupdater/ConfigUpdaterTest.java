@@ -82,7 +82,7 @@ public class ConfigUpdaterTest {
     }
 
     @Test
-    public void testRemoveSection() throws IOException, InvalidConfigurationException {
+    public void testRemoveSection() throws IOException {
         File toUpdate = new File(FILE_NAME);
         FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
         assertTrue(config.contains("section2"));
