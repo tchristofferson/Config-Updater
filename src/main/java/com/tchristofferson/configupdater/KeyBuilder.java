@@ -23,10 +23,11 @@ public class KeyBuilder implements Cloneable {
     public void parseLine(String line) {
         line = line.trim();
         String[] currentSplitLine = line.split(":");
+        String key = currentSplitLine[0].replace("'", "");
 
         //Checks keyBuilder path against config to see if the path is valid.
         //If the path doesn't exist in the config it keeps removing last key in keyBuilder.
-        while (builder.length() > 0 && !config.contains(builder.toString() + separator + currentSplitLine[0])) {
+        while (builder.length() > 0 && !config.contains(builder.toString() + separator + key)) {
             removeLastKey();
         }
 
@@ -37,7 +38,7 @@ public class KeyBuilder implements Cloneable {
 
         //Appends the current key to keyBuilder
         //If keyBuilder is 'key1.' and currentSplitLine[0] is 'key2' the resulting keyBuilder will be 'key1.key2' if separator is '.'
-        builder.append(currentSplitLine[0]);
+        builder.append(key);
     }
 
     public String getLastKey() {

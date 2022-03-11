@@ -58,6 +58,7 @@ public class ConfigUpdater {
                         continue keyLoop;
                     } else {
                         writeCommentIfExists(comments, writer, fullKey, indents);
+                        break;
                     }
                 }
             }
