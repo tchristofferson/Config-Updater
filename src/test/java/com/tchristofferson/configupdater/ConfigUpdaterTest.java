@@ -18,6 +18,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class ConfigUpdaterTest {
 
     private static final String FILE_NAME = "config.yml";
     private static final String DELETE_SECTION_FILE_NAME = "test-delete-config.yml";
-    private static final List<String> ignoredSections = Collections.singletonList("key6-ignored");
+    private static final List<String> ignoredSections = Arrays.asList("key6-ignored", "a-section-with-ignored-sections.sub-ignored");
     private static Plugin plugin;
 
     @BeforeClass
