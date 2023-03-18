@@ -30,7 +30,7 @@ public class ConfigUpdaterTest {
 
     private static final String FILE_NAME = "config.yml";
     private static final String DELETE_SECTION_FILE_NAME = "test-delete-config.yml";
-    private static final List<String> ignoredSections = Arrays.asList("key6-ignored", "a-section-with-ignored-sections.sub-ignored");
+    private static final List<String> ignoredSections = Arrays.asList("key6-ignored", "a-section-with-ignored-sections.sub-ignored", "Chat");
     private static Plugin plugin;
 
     @BeforeClass

@@ -99,24 +99,60 @@ public class ConfigUpdater {
 
     //Returns a map of key comment pairs. If a key doesn't have any comments it won't be included in the map.
     private static Map<String, String> parseComments(Plugin plugin, String resourceName, FileConfiguration defaultConfig) throws IOException {
+        //keys are in order
+        List<String> keys = new ArrayList<>(defaultConfig.getKeys(true));
         BufferedReader reader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName)));
         Map<String, String> comments = new LinkedHashMap<>();
         StringBuilder commentBuilder = new StringBuilder();
         KeyBuilder keyBuilder = new KeyBuilder(defaultConfig, SEPARATOR);
+        String previousKey = null;
+        String nextValidKey = null;
 
         String line;
         while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
 
+            if (nextValidKey != null) {
+                //Keep looping and parsing lines until we reach nextValidKey
+                if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {
+                    commentBuilder.append(trimmedLine).append("\n");
+                    continue;
+                }
+
+                if (trimmedLine.startsWith("-"))
+                    continue;
+
+                keyBuilder.parseLine(trimmedLine, false);
+
+                if (!defaultConfig.contains(keyBuilder.toString())) {
+                    keyBuilder.removeLastKey();
+                    continue;
+                }
+
+                if (keyBuilder.toString().equals(nextValidKey))
+                    nextValidKey = null;
+
+                //Removing because this line will be parsed again later
+                keyBuilder.removeLastKey();
+            }
+
             //Only getting comments for keys. A list/array element comment(s) not supported
+            //Could be a list of maps, so we need to detect next valid key and skip to it
             if (trimmedLine.startsWith("-")) {
+                //Using previous key because at the end of this method the last sub-key of key builder is removed
+                int currentKeyIndex = keys.indexOf(previousKey);
+
+                //Check if last key
+                if (currentKeyIndex != keys.size() - 1)
+                    nextValidKey = keys.get(currentKeyIndex + 1);
+
                 continue;
             }
 
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {//Is blank line or is comment
                 commentBuilder.append(trimmedLine).append("\n");
             } else {//is a valid yaml key
-                keyBuilder.parseLine(trimmedLine);
+                keyBuilder.parseLine(trimmedLine, true);
                 String key = keyBuilder.toString();
 
                 //If there is a comment associated with the key it is added to comments map and the commentBuilder is reset
@@ -124,6 +160,8 @@ public class ConfigUpdater {
                     comments.put(key, commentBuilder.toString());
                     commentBuilder.setLength(0);
                 }
+
+                previousKey = key;
 
                 //Remove the last key from keyBuilder if current path isn't a config section or if it is empty to prepare for the next key
                 if (!keyBuilder.isConfigSectionWithKeys()) {
@@ -165,7 +203,7 @@ public class ConfigUpdater {
                 }
             }
             
-            keyBuilder.parseLine(trimmedLine);
+            keyBuilder.parseLine(trimmedLine, true);
             String fullKey = keyBuilder.toString();
 
             //If building the value for an ignored section and this line is no longer a part of the ignored section,

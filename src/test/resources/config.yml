@@ -1,5 +1,20 @@
 #Top comment
 #Top second comment
+Chat:
+  #This is a list of maps
+  Announcements:
+  - Sound: CAT_HISS
+    Permission: none
+    list:
+    - a. string
+  list: not actually a list
+  # -------------------------------------------------------------------------------------------------
+  # You can specify broadcasts (how many you want) and
+  # later you can send them to the game with a command.
+  # -------------------------------------------------------------------------------------------------
+  Broadcast:
+    enabled: true
+#comment
 key1: This is key1's value
 #Key 2 comment
 key2: This is key2's value
