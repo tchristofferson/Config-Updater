@@ -20,15 +20,17 @@ public class KeyBuilder implements Cloneable {
         this.builder = new StringBuilder(keyBuilder.toString());
     }
 
-    public void parseLine(String line) {
+    public void parseLine(String line, boolean checkIfExists) {
         line = line.trim();
         String[] currentSplitLine = line.split(":");
         String key = currentSplitLine[0].replace("'", "").replace("\"", "");
 
-        //Checks keyBuilder path against config to see if the path is valid.
-        //If the path doesn't exist in the config it keeps removing last key in keyBuilder.
-        while (builder.length() > 0 && !config.contains(builder.toString() + separator + key)) {
-            removeLastKey();
+        if (checkIfExists) {
+            //Checks keyBuilder path against config to see if the path is valid.
+            //If the path doesn't exist in the config it keeps removing last key in keyBuilder.
+            while (builder.length() > 0 && !config.contains(builder.toString() + separator + key)) {
+                removeLastKey();
+            }
         }
 
         //Add the separator if there is already a key inside keyBuilder
