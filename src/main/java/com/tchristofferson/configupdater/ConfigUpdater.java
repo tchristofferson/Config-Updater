@@ -5,6 +5,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +29,7 @@ public class ConfigUpdater {
         FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
         FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(toUpdate);
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
-        Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, currentConfig, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
+        Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
 
         // will write updated config file "contents" to a string
         StringWriter writer = new StringWriter();
@@ -52,7 +54,7 @@ public class ConfigUpdater {
             } else {
                 for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
                     if (entry.getKey().equals(fullKey)) {
-                        writer.write(ignoredSectionsValues.get(fullKey) + "\n");
+                        writer.write(ignoredSectionsValues.get(fullKey));
                         continue keyLoop;
                     } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                         continue keyLoop;
@@ -178,75 +180,118 @@ public class ConfigUpdater {
         return comments;
     }
 
-    private static Map<String, String> parseIgnoredSections(File toUpdate, FileConfiguration currentConfig, Map<String, String> comments, List<String> ignoredSections) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(toUpdate));
-        Map<String, String> ignoredSectionsValues = new LinkedHashMap<>(ignoredSections.size());
-        KeyBuilder keyBuilder = new KeyBuilder(currentConfig, SEPARATOR);
-        StringBuilder valueBuilder = new StringBuilder();
+    private static Map<String, String> parseIgnoredSections(File toUpdate, Map<String, String> comments, List<String> ignoredSections) throws IOException {
+        Map<String, String> ignoredSectionValues = new LinkedHashMap<>(ignoredSections.size());
 
-        String currentIgnoredSection = null;
-        String line;
-        lineLoop : while ((line = reader.readLine()) != null) {
-            String trimmedLine = line.trim();
+        DumperOptions options = new DumperOptions();
+        options.setLineBreak(DumperOptions.LineBreak.UNIX);
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        Yaml yaml = new Yaml(options);
 
-            if (trimmedLine.isEmpty() || trimmedLine.startsWith("#"))
-                continue;
+        Map<String, Object> root = (Map<String, Object>) yaml.load(new FileReader(toUpdate));
+        ignoredSections.forEach(section -> {
+            String[] split = section.split("[" + SEPARATOR + "]");
+            String key = split[split.length - 1];
+            Map<String, Object> map = getSection(section, root);
 
-            if (trimmedLine.startsWith("-")) {
-                for (String ignoredSection : ignoredSections) {
-                    boolean isIgnoredParent = ignoredSection.equals(keyBuilder.toString());
+            StringBuilder keyBuilder = new StringBuilder();
+            for (int i = 0; i < split.length; i++) {
+                if (i != split.length - 1) {
+                    if (keyBuilder.length() > 0)
+                        keyBuilder.append(SEPARATOR);
 
-                    if (isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
-                        valueBuilder.append("\n").append(line);
-                        continue lineLoop;
-                    }
+                    keyBuilder.append(split[i]);
                 }
             }
-            
-            keyBuilder.parseLine(trimmedLine, true);
-            String fullKey = keyBuilder.toString();
 
-            //If building the value for an ignored section and this line is no longer a part of the ignored section,
-            //  write the valueBuilder, reset it, and set the current ignored section to null
-            if (currentIgnoredSection != null && !KeyBuilder.isSubKeyOf(currentIgnoredSection, fullKey, SEPARATOR)) {
-                ignoredSectionsValues.put(currentIgnoredSection, valueBuilder.toString());
-                valueBuilder.setLength(0);
-                currentIgnoredSection = null;
-            }
+            ignoredSectionValues.put(section, buildIgnored(key, map, comments, keyBuilder, new StringBuilder(), yaml));
+        });
 
-            for (String ignoredSection : ignoredSections) {
-                boolean isIgnoredParent = ignoredSection.equals(fullKey);
+        return ignoredSectionValues;
+    }
 
-                if (isIgnoredParent || keyBuilder.isSubKeyOf(ignoredSection)) {
-                    if (valueBuilder.length() > 0)
-                        valueBuilder.append("\n");
+    private static Map<String, Object> getSection(String section, Map<String, Object> root) {
+        String[] keys = section.split("[" + SEPARATOR + "]", 2);
+        String key = keys[0];
+        Object value = root.get(key);
 
-                    String comment = comments.get(fullKey);
+        if (keys.length == 1) {
+            if (value instanceof Map)
+                return root;
 
-                    if (comment != null) {
-                        String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
-                        valueBuilder.append(indents).append(comment.replace("\n", "\n" + indents));//Should end with new line (\n)
-                        valueBuilder.setLength(valueBuilder.length() - indents.length());//Get rid of trailing \n and spaces
-                    }
-
-                    valueBuilder.append(line);
-
-                    //Set the current ignored section for future iterations of while loop
-                    //Don't set currentIgnoredSection to any ignoredSection sub-keys
-                    if (isIgnoredParent)
-                        currentIgnoredSection = fullKey;
-
-                    break;
-                }
-            }
+            throw new IllegalArgumentException("Ignored sections must be a ConfigurationSection not a value!");
         }
 
-        reader.close();
+        if (!(value instanceof Map))
+            throw new IllegalArgumentException("Invalid ignored ConfigurationSection specified!");
 
-        if (valueBuilder.length() > 0)
-            ignoredSectionsValues.put(currentIgnoredSection, valueBuilder.toString());
+        return getSection(keys[1], (Map<String, Object>) value);
+    }
 
-        return ignoredSectionsValues;
+    private static String buildIgnored(String fullKey, Map<String, Object> ymlMap, Map<String, String> comments, StringBuilder keyBuilder, StringBuilder ignoredBuilder, Yaml yaml) {
+        //0 will be the next key, 1 will be the remaining keys
+        String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
+        String key = keys[0];
+
+        if (keyBuilder.length() > 0)
+            keyBuilder.append(".");
+
+        keyBuilder.append(key);
+
+        if (!ymlMap.containsKey(key)) {
+            if (keys.length == 1)
+                throw new IllegalArgumentException("Invalid ignored section: " + keyBuilder);
+
+            throw new IllegalArgumentException("Invalid ignored section: " + keyBuilder + "." + keys[1]);
+        }
+
+        String comment = comments.get(keyBuilder.toString());
+        String indents = KeyBuilder.getIndents(keyBuilder.toString(), SEPARATOR);
+
+        if (comment != null)
+            ignoredBuilder.append(addIndentation(comment, indents)).append("\n");
+
+        ignoredBuilder.append(addIndentation(key, indents)).append(":");
+        Object obj = ymlMap.get(key);
+
+        if (obj instanceof Map) {
+            ignoredBuilder.append("\n");
+            Map<String, Object> map = (Map<String, Object>) obj;
+            StringBuilder preLoopKey = new StringBuilder(keyBuilder);
+
+            for (String s : map.keySet()) {
+                buildIgnored(s, map, comments, keyBuilder, ignoredBuilder, yaml);
+                keyBuilder = new StringBuilder(preLoopKey);
+            }
+        } else {
+            writeIgnoredValue(yaml, obj, ignoredBuilder, indents);
+        }
+
+        return ignoredBuilder.toString();
+    }
+
+    private static void writeIgnoredValue(Yaml yaml, Object toWrite, StringBuilder ignoredBuilder, String indents) {
+        String yml = yaml.dump(toWrite);
+
+        if (toWrite instanceof Collection) {
+            ignoredBuilder.append("\n").append(addIndentation(yml, indents)).append("\n");
+        } else {
+            ignoredBuilder.append(" ").append(yml);
+        }
+    }
+
+    private static String addIndentation(String s, String indents) {
+        StringBuilder builder = new StringBuilder();
+        String[] split = s.split("\n");
+
+        for (String value : split) {
+            if (builder.length() > 0)
+                builder.append("\n");
+
+            builder.append(indents).append(value);
+        }
+
+        return builder.toString();
     }
 
     private static void writeCommentIfExists(Map<String, String> comments, BufferedWriter writer, String fullKey, String indents) throws IOException {
