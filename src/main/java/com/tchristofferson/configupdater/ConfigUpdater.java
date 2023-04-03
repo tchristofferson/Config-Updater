@@ -188,11 +188,11 @@ public class ConfigUpdater {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(options);
 
-        Map<String, Object> root = (Map<String, Object>) yaml.load(new FileReader(toUpdate));
+        Map<Object, Object> root = (Map<Object, Object>) yaml.load(new FileReader(toUpdate));
         ignoredSections.forEach(section -> {
             String[] split = section.split("[" + SEPARATOR + "]");
             String key = split[split.length - 1];
-            Map<String, Object> map = getSection(section, root);
+            Map<Object, Object> map = getSection(section, root);
 
             StringBuilder keyBuilder = new StringBuilder();
             for (int i = 0; i < split.length; i++) {
@@ -210,7 +210,7 @@ public class ConfigUpdater {
         return ignoredSectionValues;
     }
 
-    private static Map<String, Object> getSection(String section, Map<String, Object> root) {
+    private static Map<Object, Object> getSection(String section, Map<Object, Object> root) {
         String[] keys = section.split("[" + SEPARATOR + "]", 2);
         String key = keys[0];
         Object value = root.get(key);
@@ -225,10 +225,10 @@ public class ConfigUpdater {
         if (!(value instanceof Map))
             throw new IllegalArgumentException("Invalid ignored ConfigurationSection specified!");
 
-        return getSection(keys[1], (Map<String, Object>) value);
+        return getSection(keys[1], (Map<Object, Object>) value);
     }
 
-    private static String buildIgnored(String fullKey, Map<String, Object> ymlMap, Map<String, String> comments, StringBuilder keyBuilder, StringBuilder ignoredBuilder, Yaml yaml) {
+    private static String buildIgnored(String fullKey, Map<Object, Object> ymlMap, Map<String, String> comments, StringBuilder keyBuilder, StringBuilder ignoredBuilder, Yaml yaml) {
         //0 will be the next key, 1 will be the remaining keys
         String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
         String key = keys[0];
@@ -256,11 +256,11 @@ public class ConfigUpdater {
 
         if (obj instanceof Map) {
             ignoredBuilder.append("\n");
-            Map<String, Object> map = (Map<String, Object>) obj;
+            Map<Object, Object> map = (Map<Object, Object>) obj;
             StringBuilder preLoopKey = new StringBuilder(keyBuilder);
 
-            for (String s : map.keySet()) {
-                buildIgnored(s, map, comments, keyBuilder, ignoredBuilder, yaml);
+            for (Object o : map.keySet()) {
+                buildIgnored(o.toString(), map, comments, keyBuilder, ignoredBuilder, yaml);
                 keyBuilder = new StringBuilder(preLoopKey);
             }
         } else {
