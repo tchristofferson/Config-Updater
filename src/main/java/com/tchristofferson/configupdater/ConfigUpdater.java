@@ -306,9 +306,7 @@ public class ConfigUpdater {
             writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
     }
 
-    //Will try to get the value associated with the key
-    //If the key, as a String, is in the sectionContext it will return the value associated with it
-    //If the key, as a String, isn't in the sectionContext, it will convert it to an Integer or Long and return the value in the sectionContext
+    //Will try to get the correct key by using the sectionContext
     private static Object getKeyAsObject(String key, Map<Object, Object> sectionContext) {
         if (sectionContext.containsKey(key))
             return key;
