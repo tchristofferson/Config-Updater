@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.YamlConstructor;
+import org.bukkit.configuration.file.YamlRepresenter;
 import org.bukkit.plugin.Plugin;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -186,7 +188,7 @@ public class ConfigUpdater {
         DumperOptions options = new DumperOptions();
         options.setLineBreak(DumperOptions.LineBreak.UNIX);
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        Yaml yaml = new Yaml(options);
+        Yaml yaml = new Yaml(new YamlConstructor(), new YamlRepresenter(), options);
 
         Map<Object, Object> root = (Map<Object, Object>) yaml.load(new FileReader(toUpdate));
         ignoredSections.forEach(section -> {
@@ -210,10 +212,10 @@ public class ConfigUpdater {
         return ignoredSectionValues;
     }
 
-    private static Map<Object, Object> getSection(String section, Map<Object, Object> root) {
-        String[] keys = section.split("[" + SEPARATOR + "]", 2);
+    private static Map<Object, Object> getSection(String fullKey, Map<Object, Object> root) {
+        String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
         String key = keys[0];
-        Object value = root.get(key);
+        Object value = root.get(getKeyAsObject(key, root));
 
         if (keys.length == 1) {
             if (value instanceof Map)
@@ -232,13 +234,14 @@ public class ConfigUpdater {
         //0 will be the next key, 1 will be the remaining keys
         String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
         String key = keys[0];
+        Object originalKey = getKeyAsObject(key, ymlMap);
 
         if (keyBuilder.length() > 0)
             keyBuilder.append(".");
 
         keyBuilder.append(key);
 
-        if (!ymlMap.containsKey(key)) {
+        if (!ymlMap.containsKey(originalKey)) {
             if (keys.length == 1)
                 throw new IllegalArgumentException("Invalid ignored section: " + keyBuilder);
 
@@ -252,7 +255,7 @@ public class ConfigUpdater {
             ignoredBuilder.append(addIndentation(comment, indents)).append("\n");
 
         ignoredBuilder.append(addIndentation(key, indents)).append(":");
-        Object obj = ymlMap.get(key);
+        Object obj = ymlMap.get(originalKey);
 
         if (obj instanceof Map) {
             ignoredBuilder.append("\n");
@@ -303,22 +306,42 @@ public class ConfigUpdater {
             writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
     }
 
-    //Input: 'key1.key2' Result: 'key1'
-    private static void removeLastKey(StringBuilder keyBuilder) {
-        if (keyBuilder.length() == 0)
-            return;
+    //Will try to get the value associated with the key
+    //If the key, as a String, is in the sectionContext it will return the value associated with it
+    //If the key, as a String, isn't in the sectionContext, it will convert it to an Integer or Long and return the value in the sectionContext
+    private static Object getKeyAsObject(String key, Map<Object, Object> sectionContext) {
+        if (sectionContext.containsKey(key))
+            return key;
 
-        String keyString = keyBuilder.toString();
-        //Must be enclosed in brackets in case a regex special character is the separator
-        String[] split = keyString.split("[" + SEPARATOR + "]");
-        //Makes sure begin index isn't < 0 (error). Occurs when there is only one key in the path
-        int minIndex = Math.max(0, keyBuilder.length() - split[split.length - 1].length() - 1);
-        keyBuilder.replace(minIndex, keyBuilder.length(), "");
-    }
+        try {
+            Float keyFloat = Float.parseFloat(key);
 
-    private static void appendNewLine(StringBuilder builder) {
-        if (builder.length() > 0)
-            builder.append("\n");
+            if (sectionContext.containsKey(keyFloat))
+                return keyFloat;
+        } catch (NumberFormatException ignored) {}
+
+        try {
+            Double keyDouble = Double.parseDouble(key);
+
+            if (sectionContext.containsKey(keyDouble))
+                return keyDouble;
+        } catch (NumberFormatException ignored) {}
+
+        try {
+            Integer keyInteger = Integer.parseInt(key);
+
+            if (sectionContext.containsKey(keyInteger))
+                return keyInteger;
+        } catch (NumberFormatException ignored) {}
+
+        try {
+            Long longKey = Long.parseLong(key);
+
+            if (sectionContext.containsKey(longKey))
+                return longKey;
+        } catch (NumberFormatException ignored) {}
+
+        return null;
     }
 
 }
