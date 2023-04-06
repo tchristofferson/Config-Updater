@@ -167,9 +167,18 @@ public class ConfigUpdater {
 
                 previousKey = key;
 
-                //Remove the last key from keyBuilder if current path isn't a config section or if it is empty to prepare for the next key
-                if (!keyBuilder.isConfigSectionWithKeys()) {
-                    keyBuilder.removeLastKey();
+                int nextKeyIndex = keys.indexOf(keyBuilder.toString()) + 1;
+
+                if (nextKeyIndex < keys.size()) {
+                    String nextKey = keys.get(nextKeyIndex);
+
+                    //If true it is sub key, don't remove last key
+                    if (nextKey.startsWith(keyBuilder.toString() + SEPARATOR))
+                        continue;
+
+                    while (!keyBuilder.isEmpty() && !nextKey.startsWith(keyBuilder.toString() + SEPARATOR)) {
+                        keyBuilder.removeLastKey();
+                    }
                 }
             }
         }

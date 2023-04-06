@@ -57,7 +57,7 @@ public class ConfigUpdaterTest {
 
         //config.yml uses \r\n for new lines whereas after update uses \n
         String preUpdateContent = new String(Files.readAllBytes(getResourcePath())).replace("\r\n", "\n");
-        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate);
         String postUpdateContent = new String(Files.readAllBytes(toUpdate.toPath())).trim();
 
         assertEquals(preUpdateContent, postUpdateContent);
