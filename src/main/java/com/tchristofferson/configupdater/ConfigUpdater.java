@@ -172,10 +172,6 @@ public class ConfigUpdater {
                 if (nextKeyIndex < keys.size()) {
                     String nextKey = keys.get(nextKeyIndex);
 
-                    //If true it is sub key, don't remove last key
-                    if (nextKey.startsWith(keyBuilder.toString() + SEPARATOR))
-                        continue;
-
                     while (!keyBuilder.isEmpty() && !nextKey.startsWith(keyBuilder.toString() + SEPARATOR)) {
                         keyBuilder.removeLastKey();
                     }
