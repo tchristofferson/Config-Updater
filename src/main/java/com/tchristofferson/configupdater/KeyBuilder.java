@@ -23,8 +23,12 @@ public class KeyBuilder implements Cloneable {
     public void parseLine(String line, boolean checkIfExists) {
         line = line.trim();
 
-        int lastColonIndex = line.lastIndexOf(":");
-        String key = line.substring(0, lastColonIndex).replace("'", "").replace("\"", "");
+        String[] currentSplitLine = line.split(":");
+
+        if (currentSplitLine.length > 2)
+            currentSplitLine = line.split(": ");
+
+        String key = currentSplitLine[0].replace("'", "").replace("\"", "");
 
         if (checkIfExists) {
             //Checks keyBuilder path against config to see if the path is valid.
