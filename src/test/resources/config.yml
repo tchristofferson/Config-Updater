@@ -47,6 +47,21 @@ Chat:
 #Top comment
 #Top second comment
 Chat2:
+  Emoji:
+    Enabled: true
+    Permission: none
+    Color: '&e'
+    Emojis:
+      :): ☺
+      =): ☻
+      ':yes:': ☑
+      ':no:': ⊠
+      o/: (づ｡◕‿‿◕｡)づ
+      <3: ❤
+      ':star:': ⭐
+      ':arrow:': ➜
+      ':rage:': (╯°□°）╯︵ ┻━┻
+      YOUR_OWN_EMOJI: EMOJI
   #This is a list of maps
   Announcements:
   - Sound: CAT_HISS
