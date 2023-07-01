@@ -105,7 +105,7 @@ public class ConfigUpdater {
                     currentValidKey = trimmedLine;
                 }
 
-                keyBuilder.parseLine(trimmedLine, false);
+                keyBuilder.parseLine(trimmedLine, true);
                 String key = keyBuilder.toString();
 
                 //If there is a comment associated with the key it is added to comments map and the commentBuilder is reset
