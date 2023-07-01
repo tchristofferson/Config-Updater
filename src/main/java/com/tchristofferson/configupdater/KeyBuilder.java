@@ -61,31 +61,12 @@ public class KeyBuilder implements Cloneable {
 
     //Checks to see if the full key path represented by this instance is a sub-key of the key parameter
     public boolean isSubKeyOf(String parentKey) {
-        return isSubKeyOf(parentKey, builder.toString(), separator);
+        return KeyUtils.isSubKeyOf(parentKey, builder.toString(), separator);
     }
 
     //Checks to see if subKey is a sub-key of the key path this instance represents
     public boolean isSubKey(String subKey) {
-        return isSubKeyOf(builder.toString(), subKey, separator);
-    }
-
-    public static boolean isSubKeyOf(String parentKey, String subKey, char separator) {
-        if (parentKey.isEmpty())
-            return false;
-
-        return subKey.startsWith(parentKey)
-                && subKey.substring(parentKey.length()).startsWith(String.valueOf(separator));
-    }
-
-    public static String getIndents(String key, char separator) {
-        String[] splitKey = key.split("[" + separator + "]");
-        StringBuilder builder = new StringBuilder();
-
-        for (int i = 1; i < splitKey.length; i++) {
-            builder.append("  ");
-        }
-
-        return builder.toString();
+        return KeyUtils.isSubKeyOf(builder.toString(), subKey, separator);
     }
 
     public boolean isConfigSection() {

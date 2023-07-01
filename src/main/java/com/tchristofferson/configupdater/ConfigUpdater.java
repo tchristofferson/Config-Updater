@@ -48,24 +48,15 @@ public class ConfigUpdater {
         //Used for converting objects to yaml, then cleared
         FileConfiguration parserConfig = new YamlConfiguration();
 
-        keyLoop: for (String fullKey : defaultConfig.getKeys(true)) {
-            String indents = KeyBuilder.getIndents(fullKey, SEPARATOR);
+       for (String fullKey : defaultConfig.getKeys(true)) {
+            String indents = KeyUtils.getIndents(fullKey, SEPARATOR);
 
-            if (ignoredSectionsValues.isEmpty()) {
-                writeCommentIfExists(comments, writer, fullKey, indents);
-            } else {
-                for (Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
-                    if (entry.getKey().equals(fullKey)) {
-                        writer.write(ignoredSectionsValues.get(fullKey));
-                        continue keyLoop;
-                    } else if (KeyBuilder.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
-                        continue keyLoop;
-                    }
-                }
 
-                writeCommentIfExists(comments, writer, fullKey, indents);
+         if (!ignoredSectionsValues.isEmpty()){
+              if (writeIgnoredSectionValueIfExists(ignoredSectionsValues, writer, fullKey))
+                    continue;
             }
-
+            writeCommentIfExists(comments, writer, fullKey, indents);
             Object currentValue = currentConfig.get(fullKey);
 
             if (currentValue == null)
@@ -74,23 +65,11 @@ public class ConfigUpdater {
             String[] splitFullKey = fullKey.split("[" + SEPARATOR + "]");
             String trailingKey = splitFullKey[splitFullKey.length - 1];
 
-            if (currentValue instanceof ConfigurationSection) {
-                writer.write(indents + trailingKey + ":");
-
-                if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty())
-                    writer.write("\n");
-                else
-                    writer.write(" {}\n");
-
-                continue;
-            }
-
-            parserConfig.set(trailingKey, currentValue);
-            String yaml = parserConfig.saveToString();
-            yaml = yaml.substring(0, yaml.length() - 1).replace("\n", "\n" + indents);
-            String toWrite = indents + yaml + "\n";
-            parserConfig.set(trailingKey, null);
-            writer.write(toWrite);
+	       if (currentValue instanceof ConfigurationSection) {
+		       writeConfigurationSection(writer, indents, trailingKey, currentValue);
+		       continue;
+	       }
+	       writeYamlValue(parserConfig, writer, indents, trailingKey, currentValue);
         }
 
         String danglingComments = comments.get(null);
@@ -254,7 +233,7 @@ public class ConfigUpdater {
         }
 
         String comment = comments.get(keyBuilder.toString());
-        String indents = KeyBuilder.getIndents(keyBuilder.toString(), SEPARATOR);
+        String indents = KeyUtils.getIndents(keyBuilder.toString(), SEPARATOR);
 
         if (comment != null)
             ignoredBuilder.append(addIndentation(comment, indents)).append("\n");
@@ -347,4 +326,61 @@ public class ConfigUpdater {
         return null;
     }
 
+	/**
+	 * Writes the current value with the provided trailing key to the provided writer.
+	 *
+	 * @param parserConfig   The parser configuration to use for writing the YAML value.
+	 * @param bufferedWriter The writer to write the value to.
+	 * @param indents        The string representation of the indentation.
+	 * @param trailingKey    The trailing key for the YAML value.
+	 * @param currentValue   The current value to write as YAML.
+	 * @throws IOException If an I/O error occurs while writing the YAML value.
+	 */
+	private static void writeYamlValue(final FileConfiguration parserConfig, final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final Object currentValue) throws IOException {
+		parserConfig.set(trailingKey, currentValue);
+		String yaml = parserConfig.saveToString();
+		yaml = yaml.substring(0, yaml.length() - 1).replace("\n", "\n" + indents);
+		final String toWrite = indents + yaml + "\n";
+		parserConfig.set(trailingKey, null);
+		bufferedWriter.write(toWrite);
+	}
+
+    /**
+     * Writes the value associated with the ignored section to the provided writer,
+     * if it exists in the ignoredSectionsValues map.
+     *
+     * @param ignoredSectionsValues The map containing the ignored section-value mappings.
+     * @param bufferedWriter        The writer to write the value to.
+     * @param fullKey               The full key to search for in the ignoredSectionsValues map.
+     * @throws IOException If an I/O error occurs while writing the value.
+     */
+    private static boolean writeIgnoredSectionValueIfExists(final Map<String, String> ignoredSectionsValues, final BufferedWriter bufferedWriter, final String fullKey) throws IOException {
+        for (final Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
+            if (entry.getKey().equals(fullKey)) {
+                bufferedWriter.write(ignoredSectionsValues.get(fullKey) + "\n");
+                return true;
+            } else if (KeyUtils.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+	/**
+	 * Writes a configuration section with the provided trailing key and the current value to the provided writer.
+	 *
+	 * @param bufferedWriter The writer to write the configuration section to.
+	 * @param indents        The string representation of the indentation level.
+	 * @param trailingKey    The trailing key for the configuration section.
+	 * @param currentValue   The current value of the configuration section.
+	 * @throws IOException If an I/O error occurs while writing the configuration section.
+	 */
+	private static void writeConfigurationSection(final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final Object currentValue) throws IOException {
+		bufferedWriter.write(indents + trailingKey + ":");
+		if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty()) {
+			bufferedWriter.write("\n");
+		} else {
+			bufferedWriter.write(" {}\n");
+		}
+	}
 }
