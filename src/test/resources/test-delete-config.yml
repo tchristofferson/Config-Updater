@@ -65,10 +65,10 @@ Chat2:
       YOUR_OWN_EMOJI: EMOJI
   #This is a list of maps
   Announcements:
-    - Sound: CAT_HISS
-      Permission: none
-      list:
-        - a. string
+  - Sound: CAT_HISS
+    Permission: none
+    list:
+    - a. string
   list: not actually a list
   # -------------------------------------------------------------------------------------------------
   # You can specify broadcasts (how many you want) and

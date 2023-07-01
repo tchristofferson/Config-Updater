@@ -58,7 +58,9 @@ public class KeyBuilder implements Cloneable {
     public boolean isEmpty() {
         return builder.length() == 0;
     }
-
+    public void clear() {
+        builder.setLength(0);
+    }
     //Checks to see if the full key path represented by this instance is a sub-key of the key parameter
     public boolean isSubKeyOf(String parentKey) {
         return KeyUtils.isSubKeyOf(parentKey, builder.toString(), separator);

@@ -88,54 +88,24 @@ public class ConfigUpdater {
         Map<String, String> comments = new LinkedHashMap<>();
         StringBuilder commentBuilder = new StringBuilder();
         KeyBuilder keyBuilder = new KeyBuilder(defaultConfig, SEPARATOR);
-        String previousKey = null;
-        String nextValidKey = null;
+        String currentValidKey = null;
 
         String line;
         while ((line = reader.readLine()) != null) {
             String trimmedLine = line.trim();
-
-            if (nextValidKey != null) {
-                //Keep looping and parsing lines until we reach nextValidKey
-                if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {
-                    commentBuilder.append(trimmedLine).append("\n");
-                    continue;
-                }
-
-                if (trimmedLine.startsWith("-"))
-                    continue;
-
-                keyBuilder.parseLine(trimmedLine, false);
-
-                if (!defaultConfig.contains(keyBuilder.toString())) {
-                    keyBuilder.removeLastKey();
-                    continue;
-                }
-
-                if (keyBuilder.toString().equals(nextValidKey))
-                    nextValidKey = null;
-
-                //Removing because this line will be parsed again later
-                keyBuilder.removeLastKey();
-            }
-
             //Only getting comments for keys. A list/array element comment(s) not supported
-            //Could be a list of maps, so we need to detect next valid key and skip to it
-            if (trimmedLine.startsWith("-")) {
-                //Using previous key because at the end of this method the last sub-key of key builder is removed
-                int currentKeyIndex = keys.indexOf(previousKey);
-
-                //Check if last key
-                if (currentKeyIndex != keys.size() - 1)
-                    nextValidKey = keys.get(currentKeyIndex + 1);
-
-                continue;
-            }
+            if (trimmedLine.startsWith("-")) continue;
 
             if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) {//Is blank line or is comment
                 commentBuilder.append(trimmedLine).append("\n");
             } else {//is a valid yaml key
-                keyBuilder.parseLine(trimmedLine, true);
+                //This part verifies if it is the first non-nested key in the YAML file and then stores the result as the next non-nested value.
+                if (!line.startsWith(" ")) {
+                    keyBuilder.clear();//add clear method instead of create new instance.
+                    currentValidKey = trimmedLine;
+                }
+
+                keyBuilder.parseLine(trimmedLine, false);
                 String key = keyBuilder.toString();
 
                 //If there is a comment associated with the key it is added to comments map and the commentBuilder is reset
@@ -144,20 +114,21 @@ public class ConfigUpdater {
                     commentBuilder.setLength(0);
                 }
 
-                previousKey = key;
-
                 int nextKeyIndex = keys.indexOf(keyBuilder.toString()) + 1;
-
                 if (nextKeyIndex < keys.size()) {
-                    String nextKey = keys.get(nextKeyIndex);
 
-                    while (!keyBuilder.isEmpty() && !nextKey.startsWith(keyBuilder.toString() + SEPARATOR)) {
+                    String nextKey = keys.get(nextKeyIndex);
+                    while (!keyBuilder.isEmpty() && !nextKey.startsWith(keyBuilder.toString())) {
                         keyBuilder.removeLastKey();
+                    }
+                    //If all keys are cleared in a loop, then the first key from the nested keys in the YAML file is assigned to this keyBuilder instance.
+                    //If the file contains multiple non-nested keys, the next first non-nested key will be used.
+                    if (keyBuilder.isEmpty()) {
+                        keyBuilder.parseLine(currentValidKey, false);
                     }
                 }
             }
         }
-
         reader.close();
 
         if (commentBuilder.length() > 0)
