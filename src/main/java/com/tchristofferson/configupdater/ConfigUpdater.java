@@ -32,7 +32,6 @@ public class ConfigUpdater {
         FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(toUpdate);
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
-
         // will write updated config file "contents" to a string
         StringWriter writer = new StringWriter();
         write(defaultConfig, currentConfig, new BufferedWriter(writer), comments, ignoredSectionsValues);
@@ -52,25 +51,25 @@ public class ConfigUpdater {
             String indents = KeyUtils.getIndents(fullKey, SEPARATOR);
 
 
-         if (!ignoredSectionsValues.isEmpty()){
-              if (writeIgnoredSectionValueIfExists(ignoredSectionsValues, writer, fullKey))
-                    continue;
-            }
-            writeCommentIfExists(comments, writer, fullKey, indents);
-            Object currentValue = currentConfig.get(fullKey);
+           if (!ignoredSectionsValues.isEmpty()) {
+               if (writeIgnoredSectionValueIfExists(ignoredSectionsValues, writer, fullKey))
+                   continue;
+           }
+           writeCommentIfExists(comments, writer, fullKey, indents);
+           Object currentValue = currentConfig.get(fullKey);
 
-            if (currentValue == null)
-                currentValue = defaultConfig.get(fullKey);
+           if (currentValue == null)
+               currentValue = defaultConfig.get(fullKey);
 
-            String[] splitFullKey = fullKey.split("[" + SEPARATOR + "]");
-            String trailingKey = splitFullKey[splitFullKey.length - 1];
+           String[] splitFullKey = fullKey.split("[" + SEPARATOR + "]");
+           String trailingKey = splitFullKey[splitFullKey.length - 1];
 
-	       if (currentValue instanceof ConfigurationSection) {
-		       writeConfigurationSection(writer, indents, trailingKey, currentValue);
-		       continue;
-	       }
-	       writeYamlValue(parserConfig, writer, indents, trailingKey, currentValue);
-        }
+           if (currentValue instanceof ConfigurationSection) {
+               writeConfigurationSection(writer, indents, trailingKey, (ConfigurationSection) currentValue);
+               continue;
+           }
+           writeYamlValue(parserConfig, writer, indents, trailingKey, currentValue);
+       }
 
         String danglingComments = comments.get(null);
 
@@ -175,7 +174,12 @@ public class ConfigUpdater {
         if (keys.length == 1) {
             if (value instanceof Map)
                 return root;
-
+	   /*     if (value == null) {
+                Map<Object, Object>  map= new HashMap<>();
+                map.put(key,"{}");
+                System.out.println("key " + key);
+                return  map;
+            }*/
             throw new IllegalArgumentException("Ignored sections must be a ConfigurationSection not a value!");
         }
 
@@ -230,7 +234,6 @@ public class ConfigUpdater {
 
     private static void writeIgnoredValue(Yaml yaml, Object toWrite, StringBuilder ignoredBuilder, String indents) {
         String yml = yaml.dump(toWrite);
-
         if (toWrite instanceof Collection) {
             ignoredBuilder.append("\n").append(addIndentation(yml, indents)).append("\n");
         } else {
@@ -326,11 +329,13 @@ public class ConfigUpdater {
      * @throws IOException If an I/O error occurs while writing the value.
      */
     private static boolean writeIgnoredSectionValueIfExists(final Map<String, String> ignoredSectionsValues, final BufferedWriter bufferedWriter, final String fullKey) throws IOException {
+        String ignored = ignoredSectionsValues.get(fullKey);
+        if (ignored != null) {
+            bufferedWriter.write(ignored + "\n");
+            return true;
+        }
         for (final Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
-            if (entry.getKey().equals(fullKey)) {
-                bufferedWriter.write(ignoredSectionsValues.get(fullKey) + "\n");
-                return true;
-            } else if (KeyUtils.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
+            if (KeyUtils.isSubKeyOf(entry.getKey(), fullKey, SEPARATOR)) {
                 return true;
             }
         }
@@ -343,12 +348,12 @@ public class ConfigUpdater {
 	 * @param bufferedWriter The writer to write the configuration section to.
 	 * @param indents        The string representation of the indentation level.
 	 * @param trailingKey    The trailing key for the configuration section.
-	 * @param currentValue   The current value of the configuration section.
+	 * @param configurationSection   The current value of the configuration section.
 	 * @throws IOException If an I/O error occurs while writing the configuration section.
 	 */
-	private static void writeConfigurationSection(final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final Object currentValue) throws IOException {
+	private static void writeConfigurationSection(final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final ConfigurationSection configurationSection) throws IOException {
 		bufferedWriter.write(indents + trailingKey + ":");
-		if (!((ConfigurationSection) currentValue).getKeys(false).isEmpty()) {
+		if (!(configurationSection).getKeys(false).isEmpty()) {
 			bufferedWriter.write("\n");
 		} else {
 			bufferedWriter.write(" {}\n");
