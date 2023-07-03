@@ -220,7 +220,7 @@ public class ConfigUpdater {
             Map<Object, Object> map = (Map<Object, Object>) obj;
 
             if (map.isEmpty()) {
-                ignoredBuilder.append(" {}");
+                ignoredBuilder.append(" {}\n");
             } else {
                 ignoredBuilder.append("\n");
             }

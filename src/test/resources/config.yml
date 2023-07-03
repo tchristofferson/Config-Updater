@@ -130,7 +130,9 @@ key6-ignored:
   - item 2
 key-char: c
 end-key: end key value
-locked-name: <red><bold>閿佸畾!
+locked-name: <red><bold>锁定!
 ignored-empty: {}
+ignored-chinese:
+  test: 锁定
 #Ending comment
 #Second ending comment
