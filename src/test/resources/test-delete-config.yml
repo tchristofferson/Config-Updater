@@ -1,5 +1,96 @@
 #Top comment
 #Top second comment
+Chat:
+  Announcement:
+    # -------------------------------------------------------------------------------------------------
+    # Do you want to enable this feature?
+    # -------------------------------------------------------------------------------------------------
+    Enabled: true
+    Announcements:
+      - Sound: CAT_HISS
+        Permission: none
+        Chat_Message:
+          - ' '
+          - <center>&a▫ &2&lANNOUNCEMENT
+          - ' '
+          - <center>&7This is the example announcement
+          - <center>&7that you can send to your players.
+          - ' '
+          - <center>&cYou can toggle Random Order for announcements.
+          - ' '
+          - <center>&f* You can set Sound for it.
+          - <center>&f* You can set Permission for it.
+          - ' '
+      - Permission: chat.announcement
+        Chat_Message:
+          - ' '
+          - '&e▫ &6&lANNOUNCEMENT'
+          - ' '
+          - '&7This is the example announcement'
+          - '&7that you can send to your players.'
+          - ' '
+          - '&cPlayer is required to have the permission to see it.'
+          - ' '
+  # -------------------------------------------------------------------------------------------------
+  # You can specify broadcasts (how many you want) and
+  # later you can send them to the game with a command.
+  # -------------------------------------------------------------------------------------------------
+  Broadcast:
+    # -------------------------------------------------------------------------------------------------
+    # Do you want to enable this feature?
+    # -------------------------------------------------------------------------------------------------
+    Enabled: true
+    Broadcasts:
+      - Name: test
+        Message: '{chat}&2This is a test broadcast message.|Supports multi-line too!'
+      - Name: actionbar
+        Message: '{actionbar}Broadcast sent to the actionbar!'
+#Top comment
+#Top second comment
+Chat2:
+  Emoji:
+    Enabled: true
+    Permission: none
+    Color: '&e'
+    Emojis:
+      :): ☺
+      =): ☻
+      ':yes:': ☑
+      ':no:': ⊠
+      o/: (づ｡◕‿‿◕｡)づ
+      <3: ❤
+      ':star:': ⭐
+      ':arrow:': ➜
+      ':rage:': (╯°□°）╯︵ ┻━┻
+      YOUR_OWN_EMOJI: EMOJI
+  #This is a list of maps
+  Announcements:
+  - Sound: CAT_HISS
+    Permission: none
+    list:
+    - a. string
+  list: not actually a list
+  # -------------------------------------------------------------------------------------------------
+  # You can specify broadcasts (how many you want) and
+  # later you can send them to the game with a command.
+  # -------------------------------------------------------------------------------------------------
+  Broadcast:
+    enabled: true
+Chat3:
+  #This is a list of maps
+  Announcements:
+    - Sound: CAT_HISS
+      Permission: none
+      list:
+        - a. string
+  list: not actually a list
+  # -------------------------------------------------------------------------------------------------
+  # You can specify broadcasts (how many you want) and
+  # later you can send them to the game with a command.
+  # -------------------------------------------------------------------------------------------------
+  Broadcast:
+    enabled: true
+#comment
 key1: This is key1's value
 #Key 2 comment
 key2: This is key2's value
