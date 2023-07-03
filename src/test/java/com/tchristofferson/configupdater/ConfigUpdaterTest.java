@@ -1,5 +1,6 @@
 package com.tchristofferson.configupdater;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -57,7 +58,7 @@ public class ConfigUpdaterTest {
 
         //config.yml uses \r\n for new lines whereas after update uses \n
         String preUpdateContent = new String(Files.readAllBytes(getResourcePath())).replace("\r\n", "\n");
-        ConfigUpdater.update(plugin, FILE_NAME, toUpdate);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
         String postUpdateContent = new String(Files.readAllBytes(toUpdate.toPath())).trim();
 
         assertEquals(preUpdateContent, postUpdateContent);
@@ -92,9 +93,48 @@ public class ConfigUpdaterTest {
         assertFalse(config.contains("section2"));
     }
 
+    @Test
+    public void testIgnoredSectionsExistAfterUpdate() throws IOException {
+        File toUpdate = new File(FILE_NAME);
+        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+        String newKey = "a-section-with-ignored-sections.sub-ignored.ignored.value3";
+        config.set(newKey, 3);
+        config.save(toUpdate);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
+        config = YamlConfiguration.loadConfiguration(toUpdate);
+
+        assertTrue(config.contains(newKey));
+    }
+
+    @Test
+    public void testIgnoredEmptySectionIsValidAfterUpdate() throws IOException {
+        File toUpdate = new File(FILE_NAME);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "ignored-empty");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+
+        Object obj = config.get("ignored-empty", null);
+        assertNotNull(obj);
+        assertTrue(obj instanceof ConfigurationSection);
+
+        ConfigurationSection section = (ConfigurationSection) obj;
+        assertTrue(section.getKeys(false).isEmpty());
+    }
+
+    @Test
+    public void testIgnoredSectionKeysAreStillValidAfterUpdate() throws IOException {
+        File toUpdate = new File(FILE_NAME);
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "Chat2.Emoji.Emojis");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+
+        assertNotNull(config.get("Chat2.Emoji.Emojis.:yes:"));
+        assertNotNull(config.get("Chat2.Emoji.Emojis.:no:"));
+        assertNotNull(config.get("Chat2.Emoji.Emojis.:star:"));
+        assertNotNull(config.get("Chat2.Emoji.Emojis.:arrow:"));
+        assertNotNull(config.get("Chat2.Emoji.Emojis.:rage:"));
+    }
+
     private void saveDefaultConfig(File toUpdate) throws IOException, URISyntaxException {
-        Path path = getResourcePath();
-        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(path));
+        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(getResourcePath()));
         configuration.save(toUpdate);
     }
 

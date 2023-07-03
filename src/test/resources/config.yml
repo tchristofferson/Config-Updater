@@ -131,5 +131,6 @@ key6-ignored:
 key-char: c
 end-key: end key value
 locked-name: <red><bold>閿佸畾!
+ignored-empty: {}
 #Ending comment
 #Second ending comment
