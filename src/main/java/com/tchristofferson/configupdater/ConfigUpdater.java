@@ -217,8 +217,14 @@ public class ConfigUpdater {
         Object obj = ymlMap.get(originalKey);
 
         if (obj instanceof Map) {
-            ignoredBuilder.append("\n");
             Map<Object, Object> map = (Map<Object, Object>) obj;
+
+            if (map.isEmpty()) {
+                ignoredBuilder.append(" {}");
+            } else {
+                ignoredBuilder.append("\n");
+            }
+
             StringBuilder preLoopKey = new StringBuilder(keyBuilder);
 
             for (Object o : map.keySet()) {
