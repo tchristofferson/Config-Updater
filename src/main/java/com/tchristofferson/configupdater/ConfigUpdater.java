@@ -331,7 +331,7 @@ public class ConfigUpdater {
     private static boolean writeIgnoredSectionValueIfExists(final Map<String, String> ignoredSectionsValues, final BufferedWriter bufferedWriter, final String fullKey) throws IOException {
         String ignored = ignoredSectionsValues.get(fullKey);
         if (ignored != null) {
-            bufferedWriter.write(ignored + "\n");
+            bufferedWriter.write(ignored);
             return true;
         }
         for (final Map.Entry<String, String> entry : ignoredSectionsValues.entrySet()) {
