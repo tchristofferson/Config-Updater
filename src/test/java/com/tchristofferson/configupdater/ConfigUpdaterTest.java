@@ -108,6 +108,25 @@ public class ConfigUpdaterTest {
     }
 
     @Test
+    public void testDefaultIgnoredEmptySectionWithKeysInConfigIsSameAfterUpdate() throws IOException {
+        File toUpdate = new File(FILE_NAME);
+        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+        config.set("ignored-empty.test", 1);
+        config.save(toUpdate);
+
+        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "ignored-empty");
+        config = YamlConfiguration.loadConfiguration(toUpdate);
+
+        Object obj = config.get("ignored-empty", null);
+        assertNotNull(obj);
+        assertTrue(obj instanceof ConfigurationSection);
+
+        ConfigurationSection section = (ConfigurationSection) obj;
+        assertFalse(section.getKeys(false).isEmpty());
+        assertEquals(section.get("test", null), 1);
+    }
+
+    @Test
     public void testIgnoredSectionKeysAreStillValidAfterUpdate() throws IOException {
         File toUpdate = new File(FILE_NAME);
         ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "Chat2.Emoji.Emojis");
