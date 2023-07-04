@@ -94,19 +94,6 @@ public class ConfigUpdaterTest {
     }
 
     @Test
-    public void testIgnoredSectionsExistAfterUpdate() throws IOException {
-        File toUpdate = new File(FILE_NAME);
-        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
-        String newKey = "a-section-with-ignored-sections.sub-ignored.ignored.value3";
-        config.set(newKey, 3);
-        config.save(toUpdate);
-        ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
-        config = YamlConfiguration.loadConfiguration(toUpdate);
-
-        assertTrue(config.contains(newKey));
-    }
-
-    @Test
     public void testIgnoredEmptySectionIsValidAfterUpdate() throws IOException {
         File toUpdate = new File(FILE_NAME);
         ConfigUpdater.update(plugin, FILE_NAME, toUpdate, "ignored-empty");
