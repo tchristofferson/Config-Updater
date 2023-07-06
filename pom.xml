@@ -21,8 +21,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M5</version>
                 <configuration>
-                    <skipTests>true</skipTests>
+                    <parallel>none</parallel>
+                    <threadCount>1</threadCount>
+                    <includes>
+                        <include>**/ConfigUpdaterTest.java</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>
