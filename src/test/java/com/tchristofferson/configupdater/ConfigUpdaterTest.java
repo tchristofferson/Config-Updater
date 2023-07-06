@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,9 +58,9 @@ public class ConfigUpdaterTest {
         File toUpdate = new File(FILE_NAME);
 
         //config.yml uses \r\n for new lines whereas after update uses \n
-        String preUpdateContent = new String(Files.readAllBytes(getResourcePath())).replace("\r\n", "\n");
+        String preUpdateContent = new String(Files.readAllBytes(getResourcePath()), StandardCharsets.UTF_8).replace("\r\n", "\n");
         ConfigUpdater.update(plugin, FILE_NAME, toUpdate, ignoredSections);
-        String postUpdateContent = new String(Files.readAllBytes(toUpdate.toPath())).trim();
+        String postUpdateContent = new String(Files.readAllBytes(toUpdate.toPath()), StandardCharsets.UTF_8).trim();
 
         assertEquals(preUpdateContent, postUpdateContent);
     }
@@ -140,7 +141,7 @@ public class ConfigUpdaterTest {
     }
 
     private void saveDefaultConfig(File toUpdate) throws IOException, URISyntaxException {
-        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(getResourcePath()));
+        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(getResourcePath(), StandardCharsets.UTF_8));
         configuration.save(toUpdate);
     }
 
