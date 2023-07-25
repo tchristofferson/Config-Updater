@@ -348,7 +348,7 @@ public class ConfigUpdater {
     }
 
     /**
-     * Writes the specified commit to the provided buffer writer. If the kommit exist for this path.
+     * Writes the specified commit to the provided buffer writer. If the commit exist for this path.
      *
      * @param comments the map containing key-value pairs of commits where the key represents the path from the YAML file.
      * @param writer the BufferedWriter instance used to write the commit value.
