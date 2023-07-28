@@ -21,10 +21,32 @@ public class ConfigUpdater {
     //Used for separating keys in the keyBuilder inside parseComments method
     private static final char SEPARATOR = '.';
 
+	/**
+	 * Update the YAML file inside the plugin folder, only if it does not match the file from the JAR.
+	 *
+	 * @param plugin          the main class instance where you extend JavaPlugin.
+	 * @param resourceName    the path to your original YAML file inside the JAR.
+	 * @param toUpdate        the file you want to update.
+	 * @param ignoredSections the array of ignored section values, where each element represents the full path or the first path of the ignored section
+	 *                        and the value is the YAML content to keep unchanged.
+	 * @throws IOException if an I/O error occurs when writing to BufferedWriter or if the file does not exist,
+	 *                     is a directory rather than a regular file, or for some other reason cannot be opened for reading.
+	 */
     public static void update(Plugin plugin, String resourceName, File toUpdate, String... ignoredSections) throws IOException {
         update(plugin, resourceName, toUpdate, Arrays.asList(ignoredSections));
     }
 
+	/**
+	 * Update the YAML file inside the plugin folder, only if it does not match the file from the JAR.
+	 *
+	 * @param plugin the main class instance where you extend JavaPlugin.
+	 * @param resourceName the path to your original YAML file inside the JAR.
+	 * @param toUpdate the file you want to update.
+	 * @param ignoredSections the list of ignored section values, where each element represents the full path or the first path of
+	 *                           the ignored section and the value is the YAML content to keep unchanged.
+	 * @throws IOException if an I/O error occurs when writing to BufferedWriter or if the file does not exist,
+	 *                     is a directory rather than a regular file, or for some other reason cannot be opened for reading.
+	 */
     public static void update(Plugin plugin, String resourceName, File toUpdate, List<String> ignoredSections) throws IOException {
         Preconditions.checkArgument(toUpdate.exists(), "The toUpdate file doesn't exist!");
 
@@ -43,6 +65,16 @@ public class ConfigUpdater {
         }
     }
 
+    /**
+     * Writes the updated configuration data to the specified BufferedWriter, including comments and ignored sections.
+     *
+     * @param defaultConfig the configuration from the JAR file, representing the default values.
+     * @param currentConfig the configuration from the file inside the plugin folder, containing the current values.
+     * @param writer the BufferedWriter instance used to write the updated data.
+     * @param comments the map of comments to write, where the key represents the full path to where the comments will be added.
+     * @param ignoredSectionsValues the map of ignored section values, where the key is the full path of the ignored section and the value is the YAML content to keep unchanged.
+     * @throws IOException if an I/O error occurs while writing the data to the BufferedWriter.
+     */
     private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, BufferedWriter writer, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
         //Used for converting objects to yaml, then cleared
         FileConfiguration parserConfig = new YamlConfiguration();
@@ -79,7 +111,15 @@ public class ConfigUpdater {
         writer.close();
     }
 
-    //Returns a map of key comment pairs. If a key doesn't have any comments it won't be included in the map.
+    /**
+     * Parses comments from the YAML resource file inside the JAR and returns a map of key-comment pairs.
+     *
+     * @param plugin        the main class instance where you extend JavaPlugin.
+     * @param resourceName  the path to your original YAML file inside the JAR.
+     * @param defaultConfig the FileConfiguration representing the YAML file inside the JAR.
+     * @return a map containing key-comment pairs. If a key doesn't have any comments, it won't be included in the map.
+     * @throws IOException if an I/O error occurs while writing the comments.
+     */
     private static Map<String, String> parseComments(Plugin plugin, String resourceName, FileConfiguration defaultConfig) throws IOException {
         //keys are in order
         List<String> keys = new ArrayList<>(defaultConfig.getKeys(true));
@@ -136,6 +176,18 @@ public class ConfigUpdater {
         return comments;
     }
 
+    /**
+     * Parses through the ignored sections of the YAML file and returns a map containing the sections,
+     * along with their values, comments, and path names.
+     *
+     * @param toUpdate the file you want to update with the ignored sections.
+     * @param comments the map of comments you want to add to the YAML file. The key of each entry in the map is
+     *                 the full path to the section where you want to add the comment, and the value is the comment itself.
+     * @param ignoredSections the list of sections that will not be changed during the update. Where the elements are the full
+     *                        path or the first section that will be ignored.
+     * @return a map containing the YAML sections to be written to the file, along with their values, comments, and path names.
+     * @throws IOException if the file does not exist, is a directory rather than a regular file, or for some other reason cannot be opened for reading.
+     */
     private static Map<String, String> parseIgnoredSections(File toUpdate, Map<String, String> comments, List<String> ignoredSections) throws IOException {
         Map<String, String> ignoredSectionValues = new LinkedHashMap<>(ignoredSections.size());
 
@@ -162,10 +214,17 @@ public class ConfigUpdater {
 
             ignoredSectionValues.put(section, buildIgnored(key, map, comments, keyBuilder, new StringBuilder(), yaml));
         });
-
         return ignoredSectionValues;
     }
 
+    /**
+     * Recursively retrieves a specific section from the YAML file based on the provided full path.
+     *
+     * @param fullKey the full path to the desired section in the YAML file.
+     * @param root the root section of the YAML file.
+     * @return the map representing the desired section from the YAML file.
+     * @throws IllegalArgumentException if the specified section is not a ConfigurationSection or is invalid.
+     */
     private static Map<Object, Object> getSection(String fullKey, Map<Object, Object> root) {
         String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
         String key = keys[0];
@@ -189,6 +248,18 @@ public class ConfigUpdater {
         return getSection(keys[1], (Map<Object, Object>) value);
     }
 
+    /**
+     * Recursively builds the ignored path and values back to the file.
+     *
+     * @param fullKey the full path to the current section in the YAML file.
+     * @param ymlMap the map of sections to write.
+     * @param comments the commits to add back to the file.
+     * @param keyBuilder the StringBuilder containing the current path being read from the file.
+     * @param ignoredBuilder the StringBuilder instance to write the data to.
+     * @param yaml the Yaml instance used to serialize the Java object into a YAML String.
+     * @return the built ignored path and values as a String.
+     * @throws IllegalArgumentException if an invalid ignored section is encountered during the process.
+     */
     private static String buildIgnored(String fullKey, Map<Object, Object> ymlMap, Map<String, String> comments, StringBuilder keyBuilder, StringBuilder ignoredBuilder, Yaml yaml) {
         //0 will be the next key, 1 will be the remaining keys
         String[] keys = fullKey.split("[" + SEPARATOR + "]", 2);
@@ -238,6 +309,14 @@ public class ConfigUpdater {
         return ignoredBuilder.toString();
     }
 
+    /**
+     * Writes the ignored section to the file without making any changes.
+     *
+     * @param yaml the Yaml instance used to serialize the Java object into a YAML String.
+     * @param toWrite the object you want to write to the file as an ignored section.
+     * @param ignoredBuilder the StringBuilder instance to write the data to.
+     * @param indents the number of spaces used for indentation in the YAML representation.
+     */
     private static void writeIgnoredValue(Yaml yaml, Object toWrite, StringBuilder ignoredBuilder, String indents) {
         String yml = yaml.dump(toWrite);
         if (toWrite instanceof Collection) {
@@ -247,6 +326,13 @@ public class ConfigUpdater {
         }
     }
 
+    /**
+     * Adds the specified number of indents to each line of the given string.
+     *
+     * @param s the string to which indents are added.
+     * @param indents the indents to add to each line.
+     * @return the provided string with the correct number of indentations applied.
+     */
     private static String addIndentation(String s, String indents) {
         StringBuilder builder = new StringBuilder();
         String[] split = s.split("\n");
@@ -261,6 +347,15 @@ public class ConfigUpdater {
         return builder.toString();
     }
 
+    /**
+     * Writes the specified commit to the provided buffer writer. If the commit exist for this path.
+     *
+     * @param comments the map containing key-value pairs of commits where the key represents the path from the YAML file.
+     * @param writer the BufferedWriter instance used to write the commit value.
+     * @param fullKey the key representing the path from the YAML file.
+     * @param indents the number of spaces used for indentation.
+     * @throws IOException If an I/O error occurs while writing the YAML commits.
+     */
     private static void writeCommentIfExists(Map<String, String> comments, BufferedWriter writer, String fullKey, String indents) throws IOException {
         String comment = comments.get(fullKey);
 
@@ -270,7 +365,13 @@ public class ConfigUpdater {
             writer.write(indents + comment.substring(0, comment.length() - 1).replace("\n", "\n" + indents) + "\n");
     }
 
-    //Will try to get the correct key by using the sectionContext
+    /**
+     * Attempts to find the correct key in the sectionContext using the provided key and section context.
+     *
+     * @param key the YAML key to be searched for in the section.
+     * @param sectionContext the configuration section (Map) from the YAML file.
+     * @return the value associated with the correct key in the configuration section, or null if not found.
+     */
     private static Object getKeyAsObject(String key, Map<Object, Object> sectionContext) {
         if (sectionContext.containsKey(key))
             return key;
