@@ -27,6 +27,6 @@ reloadConfig();
 <dependency>
   <groupId>com.tchristofferson</groupId>
   <artifactId>ConfigUpdater</artifactId>
-  <version>2.1-SNAPSHOT</version>
+  <version>2.2-SNAPSHOT</version>
 </dependency>
 ```

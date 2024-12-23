@@ -132,6 +132,7 @@ key-char: c
 end-key: end key value
 locked-name: <red><bold>锁定!
 ignored-empty: {}
+#Chinese comment 锁定
 ignored-chinese:
   test: 锁定
 #Ending comment
