@@ -51,7 +51,7 @@ public class ConfigUpdater {
         Preconditions.checkArgument(toUpdate.exists(), "The toUpdate file doesn't exist!");
 
         FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
-        FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(toUpdate);
+        FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(Files.newBufferedReader(toUpdate.toPath(), StandardCharsets.UTF_8));
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
         // will write updated config file "contents" to a string
