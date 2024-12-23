@@ -123,7 +123,7 @@ public class ConfigUpdater {
     private static Map<String, String> parseComments(Plugin plugin, String resourceName, FileConfiguration defaultConfig) throws IOException {
         //keys are in order
         List<String> keys = new ArrayList<>(defaultConfig.getKeys(true));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName)));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
         Map<String, String> comments = new LinkedHashMap<>();
         StringBuilder commentBuilder = new StringBuilder();
         KeyBuilder keyBuilder = new KeyBuilder(defaultConfig, SEPARATOR);
