@@ -9,8 +9,10 @@ import org.bukkit.configuration.file.YamlRepresenter;
 import org.bukkit.plugin.Plugin;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +22,7 @@ public class ConfigUpdater {
 
     //Used for separating keys in the keyBuilder inside parseComments method
     private static final char SEPARATOR = '.';
+    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
 	/**
 	 * Update the YAML file inside the plugin folder, only if it does not match the file from the JAR.
@@ -50,8 +53,8 @@ public class ConfigUpdater {
     public static void update(Plugin plugin, String resourceName, File toUpdate, List<String> ignoredSections) throws IOException {
         Preconditions.checkArgument(toUpdate.exists(), "The toUpdate file doesn't exist!");
 
-        FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
-        FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(Files.newBufferedReader(toUpdate.toPath(), StandardCharsets.UTF_8));
+        FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), DEFAULT_CHARSET));
+        FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(Files.newBufferedReader(toUpdate.toPath(), DEFAULT_CHARSET));
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
         Map<String, String> ignoredSectionsValues = parseIgnoredSections(toUpdate, comments, ignoredSections == null ? Collections.emptyList() : ignoredSections);
         // will write updated config file "contents" to a string
@@ -60,8 +63,8 @@ public class ConfigUpdater {
         String value = writer.toString(); // config contents
 
         Path toUpdatePath = toUpdate.toPath();
-        if (!value.equals(new String(Files.readAllBytes(toUpdatePath), StandardCharsets.UTF_8))) { // if updated contents are not the same as current file contents, update
-            Files.write(toUpdatePath, value.getBytes(StandardCharsets.UTF_8));
+        if (!value.equals(new String(Files.readAllBytes(toUpdatePath), DEFAULT_CHARSET))) { // if updated contents are not the same as current file contents, update
+            Files.write(toUpdatePath, value.getBytes(DEFAULT_CHARSET));
         }
     }
 
@@ -76,8 +79,8 @@ public class ConfigUpdater {
      * @throws IOException if an I/O error occurs while writing the data to the BufferedWriter.
      */
     private static void write(FileConfiguration defaultConfig, FileConfiguration currentConfig, BufferedWriter writer, Map<String, String> comments, Map<String, String> ignoredSectionsValues) throws IOException {
-        //Used for converting objects to yaml, then cleared
-        FileConfiguration parserConfig = new YamlConfiguration();
+        //Used for converting objects to yaml
+        Yaml yaml = getYamlWriter();
 
        for (String fullKey : defaultConfig.getKeys(true)) {
             String indents = KeyUtils.getIndents(fullKey, SEPARATOR);
@@ -100,7 +103,7 @@ public class ConfigUpdater {
                writeConfigurationSection(writer, indents, trailingKey, (ConfigurationSection) currentValue);
                continue;
            }
-           writeYamlValue(parserConfig, writer, indents, trailingKey, currentValue);
+           writeYamlValue(yaml, writer, indents, trailingKey, currentValue);
        }
 
         String danglingComments = comments.get(null);
@@ -123,7 +126,7 @@ public class ConfigUpdater {
     private static Map<String, String> parseComments(Plugin plugin, String resourceName, FileConfiguration defaultConfig) throws IOException {
         //keys are in order
         List<String> keys = new ArrayList<>(defaultConfig.getKeys(true));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName), StandardCharsets.UTF_8));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(plugin.getResource(resourceName), DEFAULT_CHARSET));
         Map<String, String> comments = new LinkedHashMap<>();
         StringBuilder commentBuilder = new StringBuilder();
         KeyBuilder keyBuilder = new KeyBuilder(defaultConfig, SEPARATOR);
@@ -196,7 +199,7 @@ public class ConfigUpdater {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(new YamlConstructor(), new YamlRepresenter(), options);
 
-        Map<Object, Object> root = (Map<Object, Object>) yaml.load(new FileReader(toUpdate));
+        Map<Object, Object> root = (Map<Object, Object>) yaml.load(new InputStreamReader(new FileInputStream(toUpdate), DEFAULT_CHARSET));
         ignoredSections.forEach(section -> {
             String[] split = section.split("[" + SEPARATOR + "]");
             String key = split[split.length - 1];
@@ -410,19 +413,18 @@ public class ConfigUpdater {
 	/**
 	 * Writes the current value with the provided trailing key to the provided writer.
 	 *
-	 * @param parserConfig   The parser configuration to use for writing the YAML value.
+	 * @param yamlWriter     The {@link Yaml} object used for converting to yaml
 	 * @param bufferedWriter The writer to write the value to.
 	 * @param indents        The string representation of the indentation.
 	 * @param trailingKey    The trailing key for the YAML value.
 	 * @param currentValue   The current value to write as YAML.
 	 * @throws IOException If an I/O error occurs while writing the YAML value.
 	 */
-	private static void writeYamlValue(final FileConfiguration parserConfig, final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final Object currentValue) throws IOException {
-		parserConfig.set(trailingKey, currentValue);
-		String yaml = parserConfig.saveToString();
+	private static void writeYamlValue(final Yaml yamlWriter, final BufferedWriter bufferedWriter, final String indents, final String trailingKey, final Object currentValue) throws IOException {
+        Map<String, Object> map = Collections.singletonMap(trailingKey, currentValue);
+		String yaml = yamlWriter.dump(map);
 		yaml = yaml.substring(0, yaml.length() - 1).replace("\n", "\n" + indents);
 		final String toWrite = indents + yaml + "\n";
-		parserConfig.set(trailingKey, null);
 		bufferedWriter.write(toWrite);
 	}
 
@@ -466,4 +468,12 @@ public class ConfigUpdater {
 			bufferedWriter.write(" {}\n");
 		}
 	}
+
+    private static Yaml getYamlWriter() {
+        DumperOptions dumperOptions = new DumperOptions();
+        dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        dumperOptions.setAllowUnicode(true);
+
+        return new Yaml(dumperOptions);
+    }
 }
