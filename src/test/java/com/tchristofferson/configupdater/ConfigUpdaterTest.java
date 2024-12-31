@@ -11,9 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -24,10 +22,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+//JUnit tests should be run with -Dfile.encoding=GBK to make sure UTF8 is used everywhere
 public class ConfigUpdaterTest {
 
     private static final String FILE_NAME = "config.yml";
@@ -69,7 +68,7 @@ public class ConfigUpdaterTest {
     public void testUpdateMethodToMakeSureIgnoredSectionsAreHandledCorrectly() throws IOException, InvalidConfigurationException {
         File toUpdate = new File(FILE_NAME);
 
-        FileConfiguration config = YamlConfiguration.loadConfiguration(toUpdate);
+        FileConfiguration config = YamlConfiguration.loadConfiguration(new BufferedReader(new InputStreamReader(Files.newInputStream(toUpdate.toPath()), StandardCharsets.UTF_8)));
         config.set("a-section-with-ignored-sections.sub-ignored.ignored.value3", 3);
         config.set("a-section-with-ignored-sections.sub-ignored.ignored2.value", 1);
 
@@ -141,8 +140,10 @@ public class ConfigUpdaterTest {
     }
 
     private void saveDefaultConfig(File toUpdate) throws IOException, URISyntaxException {
-        FileConfiguration configuration = YamlConfiguration.loadConfiguration(Files.newBufferedReader(getResourcePath(), StandardCharsets.UTF_8));
-        configuration.save(toUpdate);
+        byte[] bytes = Files.readAllBytes(getResourcePath());
+        BufferedWriter writer = Files.newBufferedWriter(toUpdate.toPath(), StandardCharsets.UTF_8);
+        writer.write(new String(bytes, StandardCharsets.UTF_8));
+        writer.close();
     }
 
     private Path getResourcePath() throws URISyntaxException {
