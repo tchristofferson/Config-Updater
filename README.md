@@ -17,6 +17,15 @@ try {
 reloadConfig();
 ```
 ### Maven
+#### Stable
+```
+<dependency>
+    <groupId>com.tchristofferson</groupId>
+    <artifactId>ConfigUpdater</artifactId>
+    <version>2.2</version>
+</dependency>
+```
+#### Snapshot
 ```
 <repository>
   <name>Central Portal Snapshots</name>
@@ -32,8 +41,8 @@ reloadConfig();
 ```
 ```
 <dependency>
-  <groupId>com.tchristofferson</groupId>
-  <artifactId>ConfigUpdater</artifactId>
-  <version>2.2-SNAPSHOT</version>
+    <groupId>com.tchristofferson</groupId>
+    <artifactId>ConfigUpdater</artifactId>
+    <version>2.2-SNAPSHOT</version>
 </dependency>
 ```
