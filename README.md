@@ -26,6 +26,7 @@ reloadConfig();
 </dependency>
 ```
 #### Snapshot
+Maven Central will remove the SNAPSHOT version after 90 days of no activity. If this happens please create a new issue.
 ```
 <repository>
   <name>Central Portal Snapshots</name>
