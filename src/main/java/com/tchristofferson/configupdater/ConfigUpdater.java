@@ -1,6 +1,5 @@
 package com.tchristofferson.configupdater;
 
-import com.google.common.base.Preconditions;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -51,8 +50,10 @@ public class ConfigUpdater {
 	 *                     is a directory rather than a regular file, or for some other reason cannot be opened for reading.
 	 */
     public static void update(Plugin plugin, String resourceName, File toUpdate, List<String> ignoredSections) throws IOException {
-        Preconditions.checkArgument(toUpdate.exists(), "The toUpdate file doesn't exist!");
-
+        if (!toUpdate.exists()) {
+    		throw new IllegalArgumentException("The toUpdate file doesn't exist!");
+		}
+		
         FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(resourceName), DEFAULT_CHARSET));
         FileConfiguration currentConfig = YamlConfiguration.loadConfiguration(Files.newBufferedReader(toUpdate.toPath(), DEFAULT_CHARSET));
         Map<String, String> comments = parseComments(plugin, resourceName, defaultConfig);
